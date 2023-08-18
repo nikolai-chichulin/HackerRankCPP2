@@ -23,6 +23,14 @@ void outarr(vector<int>& v) {
     cout << endl;
 }
 
+void outarr(string s, vector<int>& v) {
+    cout << s;
+    for (int i : v) {
+        cout << " " << i;
+    }
+    cout << endl;
+}
+
 //int getm(int k, int base) {
 //}
 
@@ -183,7 +191,7 @@ void getmBF03(int k, vector<int>& vin) {
             if (steps < minsteps) {
                 minsteps = steps;
                 cout << "Found the factorization with " << minsteps << " steps!" << endl;
-                outarr(vout);
+                outarr("powers of k: ", vout);
             }
             return;
         }
@@ -219,8 +227,8 @@ int getn(int k) {
 void solveBF() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    minsteps = 50;
-    int k = 200;
+    minsteps = 20;
+    int k = 199;
     vector<int> v = { 1 };
     getmBF03(k, v);
 
@@ -251,7 +259,7 @@ void solveAll() {
     size_t s = 0;
     for (int k = 1; k <= 200; k++) {
         vector<int> v = { 1 };
-        minsteps = 50; // initial steps
+        minsteps = 20; // initial steps
         getmBF03(k, v);
         s += minsteps;
         cout << " M(" << k << ") = " << minsteps << " S = " << s << endl;
@@ -262,13 +270,14 @@ void solveAll() {
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     double t = duration.count() / 1E6;
     cout << "Execution time    = " << t << " s" << endl;
+    outf << "Execution time    = " << t << " s" << endl;
     outf.close();
 }
 
 int main() {
 
-    //solveAll();
-    solveBF();
+    solveAll();
+    //solveBF();
 
     return 0;
 }
