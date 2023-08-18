@@ -11,6 +11,7 @@ using namespace std;
 ofstream outf;
 
 size_t nmin = 10000;
+size_t minsteps = 10000;
 
 int base[][6] = { {},{},{ 2 },{ 2,3 },{},{ 2,4,5 },{},{ 2,3,4,7 },{},{2,4,8,9} };
 
@@ -155,66 +156,41 @@ void getmBF01(int k, vector<int>& vin) {
 
 /// <summary>
 /// Returns the minimal sequence of terms to get the given number k.
-/// Brure force v.0.2.
-/// </summary>
-/// <param name="k">Current k</param>
-/// <param name="vin">Available terms</param>
-void getmBF02(int k, vector<int>& vin) {
-
-    if (k == 1) {
-        nmin = 1;
-    }
-
-    size_t size = vin.size(); // size
-    int vmax = vin[size - 1]; // maximum
-    for (size_t i = 0; i < size; i++) {
-        int newterm = vmax + vin[i]; // new sum
-        if (newterm > k) {
-            return;
-        }
-        vector<int> vout(vin.begin(), vin.end());
-        vout.push_back(newterm); // save it in the array as a new maximum
-        //cout << vin[i] << " + " << vmax << endl;
-        if (newterm == k) { // if the sum is equal to the target, quit
-            if (vout.size() < nmin) {
-                nmin = vout.size();
-                cout << "Found the number, N of terms = " << vout.size() << " Nmin = " << nmin << endl;
-                outarr(vout);
-            }
-            return;
-        }
-        if (size + 1 < nmin) {
-            getmBF02(k, vout); // and call recursively
-        }
-    }
-}
-
-/// <summary>
-/// Returns the minimal sequence of terms to get the given number k.
 /// Brure force v.0.3.
 /// </summary>
 /// <param name="k">Current k</param>
 /// <param name="vin">Available terms</param>
 void getmBF03(int k, vector<int>& vin) {
+
+    // for n no steps are needed
+    if (k == 1) {
+        minsteps = 0;
+    }
+
     size_t size = vin.size(); // size
     int vmax = vin[size - 1]; // maximum
     for (size_t i = 0; i < size; i++) {
         int newterm = vmax + vin[i]; // new sum
-        if (newterm > k) {
+        if (newterm > k) { // if the new sum is greater than the targett, quit
             return;
         }
+        // create a temp vector = the old vector + the new term
         vector<int> vout(vin.begin(), vin.end());
-        vout.push_back(newterm); // save it in the array as a new maximum
+        vout.push_back(newterm);
+        size_t steps = vout.size() - 1;  // steps
         //cout << vin[i] << " + " << vmax << endl;
-        if (newterm == k) { // if the sum is equal to the target, quit
-            if (vout.size() <= nmin) {
-                nmin = vout.size();
-                cout << "Found the number, N of terms = " << vout.size() << " Nmin = " << nmin << endl;
+        if (newterm == k) { // if the sum is equal to the target, we found the solution, quit
+            if (steps < minsteps) {
+                minsteps = steps;
+                cout << "Found the factorization with " << minsteps << " steps!" << endl;
                 outarr(vout);
             }
             return;
         }
-        getmBF03(k, vout); // and call recursively
+        // call the function recursively
+        if (steps < minsteps) {
+            getmBF03(k, vout);
+        }
     }
 }
 
@@ -243,16 +219,16 @@ int getn(int k) {
 void solveBF() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    nmin = 50;
-    int n = 199;
+    minsteps = 50;
+    int k = 200;
     vector<int> v = { 1 };
-    getmBF02(n, v);
+    getmBF03(k, v);
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     double t = duration.count() / 1E6;
     cout << "Execution time    = " << t << " s" << endl;
-    cout << "Min steps         = " << nmin - 1 << endl;
+    cout << "M(" << k << ") = " << minsteps << endl;
 }
 
 void solve() {
@@ -275,11 +251,11 @@ void solveAll() {
     size_t s = 0;
     for (int k = 1; k <= 200; k++) {
         vector<int> v = { 1 };
-        nmin = 50;
-        getmBF02(k, v);
-        s += (nmin - 1);
-        cout << " M(" << k << ") = " << nmin - 1 << " S = " << s << endl;
-        outf << " M(" << k << ") = " << nmin - 1 << " S = " << s << endl;
+        minsteps = 50; // initial steps
+        getmBF03(k, v);
+        s += minsteps;
+        cout << " M(" << k << ") = " << minsteps << " S = " << s << endl;
+        outf << " M(" << k << ") = " << minsteps << " S = " << s << endl;
     }
 
     auto stop = std::chrono::high_resolution_clock::now();
@@ -291,8 +267,8 @@ void solveAll() {
 
 int main() {
 
-    solveAll();
-    //solveBF();
+    //solveAll();
+    solveBF();
 
     return 0;
 }
