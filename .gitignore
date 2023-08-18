@@ -361,3 +361,9 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/Euler122/test.dat
+/Euler88/test3.out
+/Euler88/test2.out
+/Euler88/test1.out
+/Euler88/test.2
+/Euler88/test.1
