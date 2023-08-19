@@ -308,7 +308,7 @@ void solveBF() {
 void solveBF004() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    int k = 198;
+    int k = 196;
     vector<int> vin = { 1 };
     vector<int> vout = getmBF04(k, vin, 20);
 
@@ -339,12 +339,17 @@ void solveAll() {
 
     size_t s = 0;
     for (int k = 1; k <= 200; k++) {
-        vector<int> v = { 1 };
-        minsteps = 20; // initial steps
-        getmBF03(k, v);
-        s += minsteps;
-        cout << " M(" << k << ") = " << minsteps << " S = " << s << endl;
-        outf << " M(" << k << ") = " << minsteps << " S = " << s << endl;
+        //vector<int> v = { 1 };
+        //minsteps = 20; // initial steps
+        //getmBF03(k, v);
+        //s += minsteps;
+        //cout << " M(" << k << ") = " << minsteps << " S = " << s << endl;
+        //outf << " M(" << k << ") = " << minsteps << " S = " << s << endl;
+        vector<int> vin = { 1 };
+        vector<int> vout = getmBF04(k, vin, 20);
+        s += vout.size() - 1;
+        cout << " M(" << k << ") = " << vout.size() - 1 << " S = " << s << endl;
+        outf << " M(" << k << ") = " << vout.size() - 1 << " S = " << s << endl;
     }
 
     auto stop = std::chrono::high_resolution_clock::now();
@@ -357,9 +362,9 @@ void solveAll() {
 
 int main() {
 
-    //solveAll();
+    solveAll();
     //solveBF();
-    solveBF004();
+    //solveBF004();
 
     return 0;
 }
