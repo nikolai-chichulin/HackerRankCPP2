@@ -170,7 +170,7 @@ void getmBF01(int k, vector<int>& vin) {
 /// <param name="vin">Available terms</param>
 void getmBF03(int k, vector<int>& vin) {
 
-    // for n no steps are needed
+    // for k=1 no steps are needed
     if (k == 1) {
         minsteps = 0;
     }
@@ -200,6 +200,53 @@ void getmBF03(int k, vector<int>& vin) {
             getmBF03(k, vout);
         }
     }
+}
+
+/// <summary>
+/// Returns the minimal sequence of terms to get the given number k.
+/// Brure force v.0.4.
+/// </summary>
+/// <param name="k">Current k</param>
+/// <param name="vin">Available terms</param>
+vector<int> getmBF04(int k, vector<int>& vin, size_t iminsteps) {
+
+    // for k=1 no steps are needed
+    if (k == 1) {
+        return vector<int> {1};
+    }
+
+    size_t size = vin.size(); // size
+    vector<int> ret;
+    vector<int> vout;
+    int vmax = vin[size - 1]; // maximum
+    for (size_t i = 0; i < size; i++) {
+        // new vector = old vector + new term
+        vector<int> vnew(vin.begin(), vin.end());
+        int newterm = vmax + vin[i]; // new sum
+        vnew.push_back(newterm);
+
+        if (newterm < k && size < iminsteps) { // continue
+            // call the function recursively
+            vout = getmBF04(k, vnew, iminsteps);
+        }
+        else if (newterm == k) { // found the solution
+            //cout << "Found the factorization with " << size << " steps!" << endl;
+            //outarr("powers of k: ", vnew);
+            vout = vnew;
+        }
+        else if (newterm > k) { // break the loop
+            break;
+        }
+
+        size_t steps = vout.size() - 1;  // steps
+        if (steps < iminsteps) {
+            //cout << "Found the factorization with " << steps << " steps!" << endl;
+            //outarr("powers of k: ", vout);
+            iminsteps = steps;
+            ret = vout;
+        }
+    }
+    return ret;
 }
 
 int getn(int k) {
@@ -239,6 +286,21 @@ void solveBF() {
     cout << "M(" << k << ") = " << minsteps << endl;
 }
 
+void solveBF004() {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    int k = 51;
+    vector<int> vin = { 1 };
+    vector<int> vout = getmBF04(k, vin, 20);
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    double t = duration.count() / 1E6;
+    cout << "Execution time    = " << t << " s" << endl;
+    cout << "M(" << k << ") = " << vout.size() - 1 << endl;
+    outarr("powers of k: ", vout);
+}
+
 void solve() {
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -276,8 +338,9 @@ void solveAll() {
 
 int main() {
 
-    solveAll();
+    //solveAll();
     //solveBF();
+    solveBF004();
 
     return 0;
 }
