@@ -31,6 +31,14 @@ void outarr(string s, vector<int>& v) {
     cout << endl;
 }
 
+void outarr(ofstream& ostr, string s, vector<int>& v) {
+    ostr << s;
+    for (int i : v) {
+        ostr << " " << i;
+    }
+    ostr << endl;
+}
+
 //int getm(int k, int base) {
 //}
 
@@ -225,7 +233,7 @@ vector<int> getmBF04(int k, vector<int>& vin, size_t iminsteps) {
             base /= 2;
             addsteps++;
         }
-        vector<int> ret = getmBF04(base, vin, iminsteps); // decomposition of the base
+        vector<int> ret = getmBF04(base, vin, iminsteps); // decomposition of the odd base
         // now concatenate the two vectors
         for (int a : addv) {
             ret.push_back(a);
@@ -348,8 +356,10 @@ void solveAll() {
         vector<int> vin = { 1 };
         vector<int> vout = getmBF04(k, vin, 20);
         s += vout.size() - 1;
-        cout << " M(" << k << ") = " << vout.size() - 1 << " S = " << s << endl;
-        outf << " M(" << k << ") = " << vout.size() - 1 << " S = " << s << endl;
+        cout << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
+        outf << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
+        outarr(" powers of k: ", vout);
+        outarr(outf, " powers of k: ", vout);
     }
 
     auto stop = std::chrono::high_resolution_clock::now();
