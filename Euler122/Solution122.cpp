@@ -406,6 +406,14 @@ vector<int> getmBF06(int k, vector<int>& vin, size_t iminsteps, int depth) {
                 //cout << "I'm here" << endl;
                 dorecursion &= (vin[0] + vmax) <= k && (2 * vmax >= k);
             }
+            else if (size == iminsteps - 2) {
+                //cout << "I'm here" << endl;
+                dorecursion &= (vin[0] + 2 * vmax) <= k && (4 * vmax >= k);
+            }
+            else if (size == iminsteps - 3) {
+                //cout << "I'm here" << endl;
+                dorecursion &= (vin[0] + 3 * vmax) <= k && (8 * vmax >= k);
+            }
 
             if (newterm == k || dorecursion) {
                 vector<int> vout;
@@ -506,7 +514,7 @@ void solveBF006() {
     auto start = std::chrono::high_resolution_clock::now();
 
     size_t minstepsini = 20;
-    int k = 15;
+    int k = 199;
     vector<int> vin = { 1 };
     vector<int> vout = getmBF06(k, vin, minstepsini, 0);
 
