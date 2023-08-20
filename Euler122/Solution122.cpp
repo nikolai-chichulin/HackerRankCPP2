@@ -356,6 +356,85 @@ vector<int> getmBF05(int k, vector<int>& vin, size_t iminsteps, int depth) {
     }
 }
 
+/// <summary>
+/// Returns the minimal sequence of terms to get the given number k.
+/// Brure force v.0.6.
+/// </summary>
+/// <param name="k">Current k</param>
+/// <param name="vin">Available terms</param>
+vector<int> getmBF06(int k, vector<int>& vin, size_t iminsteps, int depth) {
+
+    depth++;
+
+    // for k=1 no steps are needed
+    if (k == 1) {
+        return vector<int> {1};
+    }
+
+    // even numbers can be factorized like: k = base * 2^addsteps
+    if (k % 2 == 0) {
+        int base = k;
+        size_t addsteps = 0;
+        vector<int> addv;
+        while (base % 2 == 0) {
+            addv.insert(addv.begin(), base);
+            base /= 2;
+            addsteps++;
+        }
+        vector<int> ret = getmBF06(base, vin, iminsteps, depth); // decomposition of the odd base
+        // now concatenate the two vectors
+        for (int a : addv) {
+            ret.push_back(a);
+        }
+        return ret;
+    }
+    else {
+        size_t size = vin.size(); // size
+        vector<int> ret;
+        int vmax = vin[size - 1]; // maximum
+        //cout << "depth: " << depth << " start of loop. Ini vector size is " << vin.size();
+        //outarr(" : ", vin);
+        for (size_t i = 0; i < size; i++) {
+            //cout << "depth: " << depth << " i = " << i << endl;
+            // new vector = old vector + new term
+            vector<int> vnew(vin.begin(), vin.end());
+            int newterm = vmax + vin[i]; // new sum
+            vnew.push_back(newterm);
+
+            bool dorecursion = newterm < k&& size < iminsteps;
+            if (size == iminsteps - 1) {
+                //cout << "I'm here" << endl;
+                dorecursion &= (vin[0] + vmax) <= k && (2 * vmax >= k);
+            }
+
+            if (newterm == k || dorecursion) {
+                vector<int> vout;
+                if (dorecursion) {
+                    // call the function recursively
+                    vout = getmBF06(k, vnew, iminsteps, depth);
+                }
+                else if (newterm == k) { // found the solution
+                    //cout << "Found the factorization vector: ";
+                    //outarr("", vnew);
+                    vout = vnew;
+                }
+                size_t steps = vout.size() - 1;  // steps
+                if (steps < iminsteps) {
+                    //cout << "Found the factorization with " << steps << " steps!" << endl;
+                    //outarr("powers of k: ", vout);
+                    iminsteps = steps;
+                    ret = vout;
+                }
+            }
+            else {
+                break;
+            }
+        }
+        //cout << "depth: " << depth << " end of loop " << endl;
+        return ret;
+    }
+}
+
 int getn(int k) {
 
     if (k == 1) {
@@ -423,6 +502,22 @@ void solveBF005() {
     outarr("powers of k: ", vout);
 }
 
+void solveBF006() {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    size_t minstepsini = 20;
+    int k = 15;
+    vector<int> vin = { 1 };
+    vector<int> vout = getmBF06(k, vin, minstepsini, 0);
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    double t = duration.count() / 1E6;
+    cout << "Execution time    = " << t << " s" << endl;
+    cout << "M(" << k << ") = " << vout.size() - 1 << endl;
+    outarr("powers of k: ", vout);
+}
+
 void solve() {
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -449,7 +544,7 @@ void solveAll() {
         //cout << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         //outf << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         vector<int> vin = { 1 };
-        vector<int> vout = getmBF05(k, vin, 20, 0);
+        vector<int> vout = getmBF06(k, vin, 20, 0);
         s += vout.size() - 1;
         cout << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
         outf << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
@@ -467,10 +562,11 @@ void solveAll() {
 
 int main() {
 
-    //solveBF();
     solveAll();
+    //solveBF();
     //solveBF004();
     //solveBF005();
+    //solveBF006();
 
     return 0;
 }
