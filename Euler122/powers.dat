@@ -198,4 +198,4 @@
  M(198) = 9 S = 1563 powers of k:  1 2 3 6 12 24 48 51 99 198
  M(199) = 10 S = 1573 powers of k:  1 2 3 5 7 12 24 48 96 103 199
  M(200) = 9 S = 1582 powers of k:  1 2 3 5 10 15 25 50 100 200
-Execution time    = 3034.07 s
+Execution time    = 476.635 s
