@@ -216,7 +216,9 @@ void getmBF03(int k, vector<int>& vin) {
 /// </summary>
 /// <param name="k">Current k</param>
 /// <param name="vin">Available terms</param>
-vector<int> getmBF04(int k, vector<int>& vin, size_t iminsteps) {
+vector<int> getmBF04(int k, vector<int>& vin, size_t iminsteps, int depth) {
+
+    depth++;
 
     // for k=1 no steps are needed
     if (k == 1) {
@@ -233,7 +235,7 @@ vector<int> getmBF04(int k, vector<int>& vin, size_t iminsteps) {
             base /= 2;
             addsteps++;
         }
-        vector<int> ret = getmBF04(base, vin, iminsteps); // decomposition of the odd base
+        vector<int> ret = getmBF04(base, vin, iminsteps, depth); // decomposition of the odd base
         // now concatenate the two vectors
         for (int a : addv) {
             ret.push_back(a);
@@ -245,7 +247,10 @@ vector<int> getmBF04(int k, vector<int>& vin, size_t iminsteps) {
         vector<int> ret;
         vector<int> vout;
         int vmax = vin[size - 1]; // maximum
+        cout << "depth: " << depth << " start of loop. Ini vector size is " << vin.size();
+        outarr(" : ", vin);
         for (size_t i = 0; i < size; i++) {
+            cout << "depth: " << depth << " i = " << i << endl;
             // new vector = old vector + new term
             vector<int> vnew(vin.begin(), vin.end());
             int newterm = vmax + vin[i]; // new sum
@@ -253,11 +258,11 @@ vector<int> getmBF04(int k, vector<int>& vin, size_t iminsteps) {
 
             if (newterm < k && size < iminsteps) { // continue
                 // call the function recursively
-                vout = getmBF04(k, vnew, iminsteps);
+                vout = getmBF04(k, vnew, iminsteps, depth);
             }
             else if (newterm == k) { // found the solution
-                //cout << "Found the factorization with " << size << " steps!" << endl;
-                //outarr("powers of k: ", vnew);
+                cout << "Found the factorization vector: ";
+                outarr("", vnew);
                 vout = vnew;
             }
             else if (newterm > k) { // break the loop
@@ -272,6 +277,7 @@ vector<int> getmBF04(int k, vector<int>& vin, size_t iminsteps) {
                 ret = vout;
             }
         }
+        cout << "depth: " << depth << " end of loop " << endl;
         return ret;
     }
 }
@@ -316,9 +322,9 @@ void solveBF() {
 void solveBF004() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    int k = 196;
+    int k = 19;
     vector<int> vin = { 1 };
-    vector<int> vout = getmBF04(k, vin, 20);
+    vector<int> vout = getmBF04(k, vin, 20, 0);
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
@@ -354,7 +360,7 @@ void solveAll() {
         //cout << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         //outf << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         vector<int> vin = { 1 };
-        vector<int> vout = getmBF04(k, vin, 20);
+        vector<int> vout = getmBF04(k, vin, 20, 0);
         s += vout.size() - 1;
         cout << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
         outf << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
@@ -372,9 +378,9 @@ void solveAll() {
 
 int main() {
 
-    solveAll();
+    //solveAll();
     //solveBF();
-    //solveBF004();
+    solveBF004();
 
     return 0;
 }
