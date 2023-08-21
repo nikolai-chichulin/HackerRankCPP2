@@ -443,6 +443,112 @@ vector<int> getmBF06(int k, vector<int>& vin, size_t iminsteps, int depth) {
     }
 }
 
+/// <summary>
+/// Returns the minimal sequence of terms to get the given number k.
+/// Brure force v.0.7.
+/// </summary>
+/// <param name="k">Current k</param>
+/// <param name="vin">Available terms</param>
+vector<int> getmBF07(int k, vector<int>& vin, size_t iminsteps, int depth) {
+
+    depth++;
+
+    // for k=1 no steps are needed
+    if (k == 1) {
+        return vector<int> {1};
+    }
+
+    // even numbers can be factorized like: k = base * 2^addsteps
+    if (k % 2 == 0) {
+        int base = k;
+        size_t addsteps = 0;
+        vector<int> addv;
+        while (base % 2 == 0) {
+            addv.insert(addv.begin(), base);
+            base /= 2;
+            addsteps++;
+        }
+        vector<int> ret = getmBF07(base, vin, iminsteps, depth); // decomposition of the odd base
+        // now concatenate the two vectors
+        for (int a : addv) {
+            ret.push_back(a);
+        }
+        return ret;
+    }
+    else {
+        vector<int> ret;
+        size_t size = vin.size(); // size
+        int vmax = vin[size - 1]; // maximum
+
+        if (size < iminsteps) {
+            // check the possibility to complete the sequence in one move
+            // given we have a series of known powers a0, a1, ..., aN
+            // new term can be: aN+a0, aN+a2, ..., aN+aN
+            // is k in this range? if yes, we can get reach the target in one act
+            bool stop = std::binary_search(vin.begin(), vin.end(), k - vmax);
+
+            if (stop) {
+                vector<int> vnew(vin.begin(), vin.end());
+                vnew.push_back(k);
+                if (size < iminsteps) {
+                    iminsteps = size;
+                }
+                //cout << "1) Found the factorization with " << size << " steps!" << endl;
+                //outarr("powers of k: ", vnew);
+                return vnew;
+            }
+            else { // use recursion
+                //cout << "depth: " << depth << " start of loop. Ini vector size is " << vin.size();
+                //outarr(" : ", vin);
+                for (size_t i = 0; i < size; i++) {
+                    //cout << "depth: " << depth << " i = " << i << endl;
+                    // new vector = old vector + new term
+                    vector<int> vnew(vin.begin(), vin.end());
+                    int newterm = vmax + vin[i]; // new sum
+                    vnew.push_back(newterm);
+
+                    bool dorecursion = newterm < k&& size < iminsteps;
+                    if (size == iminsteps - 1) {
+                        //cout << "I'm here" << endl;
+                        dorecursion &= (vin[0] + vmax) <= k && (2 * vmax >= k);
+                    }
+                    else if (size == iminsteps - 2) {
+                        //cout << "I'm here" << endl;
+                        dorecursion &= (vin[0] + 2 * vmax) <= k && (4 * vmax >= k);
+                    }
+                    else if (size == iminsteps - 3) {
+                        //cout << "I'm here" << endl;
+                        dorecursion &= (vin[0] + 3 * vmax) <= k && (8 * vmax >= k);
+                    }
+
+                    if (newterm == k || dorecursion) {
+                        vector<int> vout;
+                        if (dorecursion) {
+                            // call the function recursively
+                            vout = getmBF07(k, vnew, iminsteps, depth);
+                        }
+                        else if (newterm == k) { // found the solution
+                            vout = vnew;
+                        }
+                        size_t steps = vout.size() - 1;  // steps
+                        if (steps < iminsteps) {
+                            //cout << "2) Found the factorization with " << steps << " steps!" << endl;
+                            //outarr("powers of k: ", vout);
+                            iminsteps = steps;
+                            ret = vout;
+                        }
+                    }
+                    else {
+                        break;
+                    }
+                }
+                //cout << "depth: " << depth << " end of loop " << endl;
+            }
+        }
+        return ret;
+    }
+}
+
 int getn(int k) {
 
     if (k == 1) {
@@ -526,6 +632,22 @@ void solveBF006() {
     outarr("powers of k: ", vout);
 }
 
+void solveBF007() {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    size_t minstepsini = 20;
+    int k = 199;
+    vector<int> vin = { 1 };
+    vector<int> vout = getmBF07(k, vin, minstepsini, 0);
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    double t = duration.count() / 1E6;
+    cout << "Execution time    = " << t << " s" << endl;
+    cout << "M(" << k << ") = " << vout.size() - 1 << endl;
+    outarr("powers of k: ", vout);
+}
+
 void solve() {
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -552,7 +674,7 @@ void solveAll() {
         //cout << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         //outf << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         vector<int> vin = { 1 };
-        vector<int> vout = getmBF06(k, vin, 20, 0);
+        vector<int> vout = getmBF07(k, vin, 20, 0);
         s += vout.size() - 1;
         cout << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
         outf << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
@@ -575,6 +697,7 @@ int main() {
     //solveBF004();
     //solveBF005();
     //solveBF006();
+    //solveBF007();
 
     return 0;
 }
