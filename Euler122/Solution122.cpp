@@ -114,7 +114,7 @@ void getv(int k, vector<int>& vin) {
 
 /// <summary>
 /// Returns the minimal sequence of terms to get the given number k.
-/// Brure force v.0.0.
+/// Brute force v.0.0.
 /// </summary>
 /// <param name="k">Current k</param>
 /// <param name="vin">Available terms</param>
@@ -143,7 +143,7 @@ void getmBF00(int k, vector<int>& vin) {
 
 /// <summary>
 /// Returns the minimal sequence of terms to get the given number k.
-/// Brure force v.0.1.
+/// Brute force v.0.1.
 /// </summary>
 /// <param name="k">Current k</param>
 /// <param name="vin">Available terms</param>
@@ -172,7 +172,7 @@ void getmBF01(int k, vector<int>& vin) {
 
 /// <summary>
 /// Returns the minimal sequence of terms to get the given number k.
-/// Brure force v.0.3.
+/// Brute force v.0.3.
 /// </summary>
 /// <param name="k">Current k</param>
 /// <param name="vin">Available terms</param>
@@ -212,7 +212,7 @@ void getmBF03(int k, vector<int>& vin) {
 
 /// <summary>
 /// Returns the minimal sequence of terms to get the given number k.
-/// Brure force v.0.4.
+/// Brute force v.0.4.
 /// </summary>
 /// <param name="k">Current k</param>
 /// <param name="vin">Available terms</param>
@@ -284,7 +284,7 @@ vector<int> getmBF04(int k, vector<int>& vin, size_t iminsteps, int depth) {
 
 /// <summary>
 /// Returns the minimal sequence of terms to get the given number k.
-/// Brure force v.0.5.
+/// Brute force v.0.5.
 /// </summary>
 /// <param name="k">Current k</param>
 /// <param name="vin">Available terms</param>
@@ -358,7 +358,7 @@ vector<int> getmBF05(int k, vector<int>& vin, size_t iminsteps, int depth) {
 
 /// <summary>
 /// Returns the minimal sequence of terms to get the given number k.
-/// Brure force v.0.6.
+/// Brute force v.0.6.
 /// </summary>
 /// <param name="k">Current k</param>
 /// <param name="vin">Available terms</param>
@@ -445,7 +445,7 @@ vector<int> getmBF06(int k, vector<int>& vin, size_t iminsteps, int depth) {
 
 /// <summary>
 /// Returns the minimal sequence of terms to get the given number k.
-/// Brure force v.0.7.
+/// Brute force v.0.7.
 /// </summary>
 /// <param name="k">Current k</param>
 /// <param name="vin">Available terms</param>
