@@ -493,12 +493,12 @@ vector<int> getmBF07(int k, vector<int>& vin, size_t iminsteps, int depth) {
                 if (size < iminsteps) {
                     iminsteps = size;
                 }
-                //cout << "1) Found the factorization with " << size << " steps!" << endl;
-                //outarr("powers of k: ", vnew);
+                //cout << "1) Found the factorization with " << size << " steps (binary search): ";
+                //outarr("", vnew);
                 return vnew;
             }
             else { // use recursion
-                //cout << "depth: " << depth << " start of loop. Ini vector size is " << vin.size();
+                //cout << "depth: " << depth << " start of the loop. Ini vector size is " << vin.size();
                 //outarr(" : ", vin);
                 for (size_t i = 0; i < size; i++) {
                     //cout << "depth: " << depth << " i = " << i << endl;
@@ -510,7 +510,8 @@ vector<int> getmBF07(int k, vector<int>& vin, size_t iminsteps, int depth) {
                     bool dorecursion = newterm < k&& size < iminsteps;
                     if (size == iminsteps - 1) {
                         //cout << "I'm here" << endl;
-                        dorecursion &= (vin[0] + vmax) <= k && (2 * vmax >= k);
+                        dorecursion &= std::binary_search(vnew.begin(), vnew.end(), k - newterm);
+                        //dorecursion &= (vin[0] + vmax) <= k && (2 * vmax >= k);
                     }
                     else if (size == iminsteps - 2) {
                         //cout << "I'm here" << endl;
@@ -532,8 +533,8 @@ vector<int> getmBF07(int k, vector<int>& vin, size_t iminsteps, int depth) {
                         }
                         size_t steps = vout.size() - 1;  // steps
                         if (steps < iminsteps) {
-                            //cout << "2) Found the factorization with " << steps << " steps!" << endl;
-                            //outarr("powers of k: ", vout);
+                            //cout << "2) Found the factorization with " << steps << " steps (recursion): ";
+                            //outarr("", vout);
                             iminsteps = steps;
                             ret = vout;
                         }
@@ -635,8 +636,8 @@ void solveBF006() {
 void solveBF007() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    size_t minstepsini = 20;
-    int k = 199;
+    size_t minstepsini = 12;
+    int k = 299;
     vector<int> vin = { 1 };
     vector<int> vout = getmBF07(k, vin, minstepsini, 0);
 
@@ -674,11 +675,11 @@ void solveAll() {
         //cout << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         //outf << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         vector<int> vin = { 1 };
-        vector<int> vout = getmBF07(k, vin, 20, 0);
+        vector<int> vout = getmBF07(k, vin, 12, 0);
         s += vout.size() - 1;
-        cout << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
+        //cout << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
         outf << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
-        outarr(" powers of k: ", vout);
+        //outarr(" powers of k: ", vout);
         outarr(outf, " powers of k: ", vout);
     }
 
