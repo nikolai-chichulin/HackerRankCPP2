@@ -696,6 +696,138 @@ vector<int> getmBF08(int k, vector<int>& vin, size_t iminsteps, int depth) {
     return ret;
 }
 
+/// <summary>
+/// Returns the minimal sequence of terms to get the given number k.
+/// Brute force v.0.8.1.
+/// </summary>
+/// <param name="k">Current k</param>
+/// <param name="vin">Available terms</param>
+vector<int> getmBF081(int k, vector<int>& vin, size_t iminsteps, int depth) {
+
+    depth++;
+    ncalls++;
+
+    // guard
+    if (vin.empty()) {
+        return vempty;
+    }
+
+    // return constant vectors for k=1,2,3,4
+    if (k == 1) {
+        return vone;
+    }
+    else if (k == 2) {
+        return vtwo;
+    }
+    else if (k == 3) {
+        return vthree;
+    }
+    else if (k == 4) {
+        return vfour;
+    }
+
+    // even numbers can be factorized like: k = base * 2^addsteps
+    if (k % 2 == 0) {
+        int base = k;
+        size_t addsteps = 0;
+        vector<int> addv;
+        while (base % 2 == 0) {
+            addv.insert(addv.begin(), base);
+            base /= 2;
+            addsteps++;
+        }
+        vector<int> ret = getmBF081(base, vin, iminsteps, depth); // decomposition of the odd base
+        // now concatenate the two vectors
+        for (int a : addv) {
+            ret.push_back(a);
+        }
+        return ret;
+    }
+
+    // odd numbers, the most sofisticated case
+    size_t size = vin.size(); // size
+
+    // calculate the reserve of elements that potentially can be added to Vin
+    // it must be > 0, otherwise quit
+    int nres = int(iminsteps) - int(size);
+    if (nres <= 0) {
+        return vempty;
+    }
+
+    // then the maximum of the last added element is Vmax * 2^nres
+    // if the maximum is less than k, quit
+    int vmax = vin[size - 1]; // maximum of vin
+    int vlastmax = vmax * int(pow(2, nres));
+    if (vlastmax < k) {
+        return vempty;
+    }
+
+    nres--; // in the loop below the array wil be one element longer, so decrement nres
+    vector<int> ret = vempty;
+    for (int vi : vin) {
+        int newelement = vmax + vi; // new sum vN + vi
+        if (newelement > k) { // do not exceed the k
+            break;
+        }
+
+        // estimate again the maximum of the last added element is Vmax * 2^nres
+        // if the maximum is less than k, continue the loop
+        vlastmax = newelement * int(pow(2, nres));
+        if (vlastmax < k) {
+            continue;
+        }
+
+        // construct the new vector = old vector + new element
+        vector<int> vnew(vin.begin(), vin.end());
+        vnew.push_back(newelement);
+        //outf << "depth = " << depth << " vi = " << vi;
+        //outarr(outf, " Vnew: ", vnew);
+
+        // there are two options:
+        // 1) the new array can be "closed" by adding one element right here, or
+        // 2) pass the new array as a parameter to the recursion
+
+        // 1)
+        if (newelement >= k / 2) {
+            //outf << "depth = " << depth << " binary search in the series";
+            //outarr(outf, " Vnew: ", vnew);
+            nbinaries++;
+            if (std::binary_search(vnew.begin(), vnew.end(), k - newelement)) {
+                vnew.push_back(k);
+                ret = vnew;
+                if ((ret.size() - 1) < iminsteps) {
+                    iminsteps = ret.size() - 1;
+                }
+                //outf << "--------------------" << endl;
+                //outf << "depth = " << depth << " the series found. Steps = " << iminsteps << endl;
+                //outarr(outf, "Vin:          ", vin);
+                //outarr(outf, "Vnew:         ", vnew);
+                //outarr(outf, "Final powers: ", ret);
+                //outf << "--------------------" << endl;
+                break;
+            }
+        }
+
+        // 2)
+        // the vnew array can't be closed by adding only one element (see step 1)
+        // so it can be closed by adding two or more elements inside the recursive call
+        // but in this case nsteps can be size(vnew) + 1 in the best case
+        // so it only makes sense if size(vnew) + 1 < iminsteps that is reached so far
+        // but size(vnew) = size(vin) + 1
+        // thus:
+        if (size + 2 < iminsteps) {
+            nrecursion++;
+            vector<int> tmp = getmBF081(k, vnew, iminsteps, depth);
+            if (!tmp.empty() && (tmp.size() - 1) < iminsteps) {
+                iminsteps = tmp.size() - 1;
+                ret = tmp;
+            }
+        }
+    }
+    //cout << "depth: " << depth << " end of loop " << endl;
+    return ret;
+}
+
 int getn(int k) {
 
     if (k == 1) {
@@ -800,6 +932,7 @@ void solveBF007() {
 }
 
 void solveBF008() {
+    outf.open("test.dat");
     auto start = std::chrono::high_resolution_clock::now();
 
     ncalls = 0;
@@ -807,7 +940,7 @@ void solveBF008() {
     size_t minstepsini = 20;
     int k = 199;
     vector<int> vin = { 1 };
-    vector<int> vout = getmBF08(k, vin, minstepsini, 0);
+    vector<int> vout = getmBF081(k, vin, minstepsini, 0);
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
@@ -821,6 +954,7 @@ void solveBF008() {
     cout << "N binary searches  = " << nbinaries << endl;
     cout << "N function calls   = " << ncalls << endl;
     cout << "N recursive calls  = " << nrecursion << endl;
+    outf.close();
 }
 
 void solve() {
@@ -849,7 +983,7 @@ void solveAll() {
         //cout << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         //outf << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         vector<int> vin = { 1 };
-        vector<int> vout = getmBF08(k, vin, minsteps, 0);
+        vector<int> vout = getmBF081(k, vin, minsteps, 0);
         s += vout.size() - 1;
         //cout << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
         outf << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
@@ -873,6 +1007,7 @@ int main() {
     //solveBF005();
     //solveBF006();
     //solveBF007();
+    //solveBF008();
     //solveBF008();
 
     return 0;
