@@ -13,7 +13,17 @@ ofstream outf;
 size_t nmin = 10000;
 size_t minsteps = 10000;
 
+int nbinaries = 0;
+int ncalls = 0;
+int nrecursion = 0;
+
 int base[][6] = { {},{},{ 2 },{ 2,3 },{},{ 2,4,5 },{},{ 2,3,4,7 },{},{2,4,8,9} };
+
+const vector<int> vempty = { };
+const vector<int> vone = { 1 };
+const vector<int> vtwo = { 1,2 };
+const vector<int> vthree = { 1,2,3 };
+const vector<int> vfour = { 1,2,4 };
 
 void outarr(vector<int>& v) {
     cout << "vector v: ";
@@ -452,6 +462,7 @@ vector<int> getmBF06(int k, vector<int>& vin, size_t iminsteps, int depth) {
 vector<int> getmBF07(int k, vector<int>& vin, size_t iminsteps, int depth) {
 
     depth++;
+    ncalls++;
 
     // for k=1 no steps are needed
     if (k == 1) {
@@ -514,8 +525,9 @@ vector<int> getmBF07(int k, vector<int>& vin, size_t iminsteps, int depth) {
                         //dorecursion &= (vin[0] + vmax) <= k && (2 * vmax >= k);
                     }
                     else if (size == iminsteps - 2) {
-                        //cout << "I'm here" << endl;
+                        //cout << "I'm here. dorecirsion is " << dorecursion;
                         dorecursion &= (vin[0] + 2 * vmax) <= k && (4 * vmax >= k);
+                        //cout << " now dorecirsion is " << dorecursion << endl;
                     }
                     else if (size == iminsteps - 3) {
                         //cout << "I'm here" << endl;
@@ -526,6 +538,7 @@ vector<int> getmBF07(int k, vector<int>& vin, size_t iminsteps, int depth) {
                         vector<int> vout;
                         if (dorecursion) {
                             // call the function recursively
+                            nrecursion++;
                             vout = getmBF07(k, vnew, iminsteps, depth);
                         }
                         else if (newterm == k) { // found the solution
@@ -548,6 +561,131 @@ vector<int> getmBF07(int k, vector<int>& vin, size_t iminsteps, int depth) {
         }
         return ret;
     }
+}
+
+/// <summary>
+/// Returns the minimal sequence of terms to get the given number k.
+/// Brute force v.0.8.
+/// </summary>
+/// <param name="k">Current k</param>
+/// <param name="vin">Available terms</param>
+vector<int> getmBF08(int k, vector<int>& vin, size_t iminsteps, int depth) {
+
+    depth++;
+    ncalls++;
+
+    // guard
+    if (vin.empty()) {
+        return vempty;
+    }
+
+    // return constant vectors for k=1,2,3,4
+    if (k == 1) {
+        return vone;
+    }
+    else if (k == 2) {
+        return vtwo;
+    }
+    else if (k == 3) {
+        return vthree;
+    }
+    else if (k == 4) {
+        return vfour;
+    }
+
+    // even numbers can be factorized like: k = base * 2^addsteps
+    if (k % 2 == 0) {
+        int base = k;
+        size_t addsteps = 0;
+        vector<int> addv;
+        while (base % 2 == 0) {
+            addv.insert(addv.begin(), base);
+            base /= 2;
+            addsteps++;
+        }
+        vector<int> ret = getmBF08(base, vin, iminsteps, depth); // decomposition of the odd base
+        // now concatenate the two vectors
+        for (int a : addv) {
+            ret.push_back(a);
+        }
+        return ret;
+    }
+
+    // odd numbers, the most sofisticated case
+    size_t size = vin.size(); // size
+
+    // the steps count for the initial array is size-1
+    // steps count after adding a number to the vin is equal to size
+    // we are only interested in cases with less steps
+    if (size >= iminsteps) {
+        return vempty;
+    }
+
+    int vmax = vin[size - 1]; // maximum of vin
+
+    // now check if we can complete the sequence in one move ("close" the array)
+    // given we have a series of known powers v0, v1, ..., vN
+    // the new element can be one of the following: vN+v0, vN+v2, ..., vN+vN
+    // is k equal to any of them? if yes, we can get reach the target right now
+    nbinaries++;
+    if (std::binary_search(vin.begin(), vin.end(), k - vmax)) {
+        vector<int> ret(vin.begin(), vin.end());
+        ret.push_back(k); // the final array
+        if ((ret.size() - 1) < iminsteps) {
+            iminsteps = ret.size() - 1;
+        }
+        return ret;
+    }
+
+    // add the array elements to the last element one by one
+    // it only makes sense if the array is greater than
+    if (size + 1 >= iminsteps) {
+        return vempty;
+    }
+    vector<int> ret = vempty;
+    for (int vi : vin) {
+        int newelement = vmax + vi; // new sum vN + vi
+        if (newelement > k) { // do not exceed the k
+            break;
+        }
+
+        // construct the new vector = old vector + new element
+        vector<int> vnew(vin.begin(), vin.end());
+        vnew.push_back(newelement);
+
+        // there are two options:
+        // 1) the new array can be "closed" by adding one element right here, or
+        // 2) pass the new array as a parameter to the recursion
+
+        // 1)
+        nbinaries++;
+        if (std::binary_search(vnew.begin(), vnew.end(), k - newelement)) {
+            vnew.push_back(k);
+            ret = vnew;
+            if ((ret.size() - 1) < iminsteps) {
+                iminsteps = ret.size() - 1;
+            }
+            break;
+        }
+
+        // 2)
+        // the vnew array can't be closed by adding only one element (see step 1)
+        // so it can be closed by adding two or more elements inside the recursive call
+        // but in this case nsteps can be size(vnew) + 1 in the best case
+        // so it only makes sense if size(vnew) + 1 < iminsteps that is reached so far
+        // but size(vnew) = size(vin) + 1
+        // thus:
+        if (size + 2 < iminsteps) {
+            nrecursion++;
+            vector<int> tmp = getmBF08(k, vnew, iminsteps, depth);
+            if (!tmp.empty() && (tmp.size() - 1) < iminsteps) {
+                iminsteps = tmp.size() - 1;
+                ret = tmp;
+            }
+        }
+    }
+    //cout << "depth: " << depth << " end of loop " << endl;
+    return ret;
 }
 
 int getn(int k) {
@@ -636,17 +774,45 @@ void solveBF006() {
 void solveBF007() {
     auto start = std::chrono::high_resolution_clock::now();
 
-    size_t minstepsini = 12;
-    int k = 299;
+    ncalls = 0;
+    nrecursion = 0;
+    size_t minstepsini = 20;
+    int k = 199;
     vector<int> vin = { 1 };
     vector<int> vout = getmBF07(k, vin, minstepsini, 0);
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     double t = duration.count() / 1E6;
-    cout << "Execution time    = " << t << " s" << endl;
+    cout << "v.0.7 Execution time    = " << t << " s" << endl;
     cout << "M(" << k << ") = " << vout.size() - 1 << endl;
     outarr("powers of k: ", vout);
+    cout << "N function calls   = " << ncalls << endl;
+    cout << "N recursive calls  = " << nrecursion << endl;
+}
+
+void solveBF008() {
+    auto start = std::chrono::high_resolution_clock::now();
+
+    ncalls = 0;
+    nrecursion = 0;
+    size_t minstepsini = 20;
+    int k = 199;
+    vector<int> vin = { 1 };
+    vector<int> vout = getmBF08(k, vin, minstepsini, 0);
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    double t = duration.count() / 1E6;
+    cout << "v.0.8 Execution time    = " << t << " s" << endl;
+    size_t steps = vout.empty() ? 0 : vout.size() - 1;
+    cout << "M(" << k << ") = " << steps << endl;
+    if (steps > 0) {
+        outarr("Powers of k: ", vout);
+    }
+    cout << "N binary searches  = " << nbinaries << endl;
+    cout << "N function calls   = " << ncalls << endl;
+    cout << "N recursive calls  = " << nrecursion << endl;
 }
 
 void solve() {
@@ -693,12 +859,13 @@ void solveAll() {
 
 int main() {
 
-    solveAll();
+    //solveAll();
     //solveBF();
     //solveBF004();
     //solveBF005();
     //solveBF006();
-    //solveBF007();
+    solveBF007();
+    solveBF008();
 
     return 0;
 }
