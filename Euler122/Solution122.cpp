@@ -621,7 +621,15 @@ vector<int> getmBF08(int k, vector<int>& vin, size_t iminsteps, int depth) {
         return vempty;
     }
 
+    // calculate we can the reserve of elements that potentially can be added to Vin
+    size_t nres = iminsteps - size; // > 0
+    // then the maximal of the last added element is Vmax * 2^nres
     int vmax = vin[size - 1]; // maximum of vin
+    int vlastmax = vmax * int(pow(2, nres));
+
+    if (vlastmax < k) {
+        return vempty;
+    }
 
     // now check if we can complete the sequence in one move ("close" the array)
     // given we have a series of known powers v0, v1, ..., vN
@@ -835,13 +843,13 @@ void solveAll() {
     size_t s = 0;
     for (int k = 1; k <= 200; k++) {
         //vector<int> v = { 1 };
-        //minsteps = 20; // initial steps
+        minsteps = 20; // initial steps
         //getmBF03(k, v);
         //s += minsteps;
         //cout << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         //outf << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         vector<int> vin = { 1 };
-        vector<int> vout = getmBF07(k, vin, 12, 0);
+        vector<int> vout = getmBF08(k, vin, minsteps, 0);
         s += vout.size() - 1;
         //cout << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
         outf << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
@@ -859,13 +867,13 @@ void solveAll() {
 
 int main() {
 
-    //solveAll();
+    solveAll();
     //solveBF();
     //solveBF004();
     //solveBF005();
     //solveBF006();
-    solveBF007();
-    solveBF008();
+    //solveBF007();
+    //solveBF008();
 
     return 0;
 }
