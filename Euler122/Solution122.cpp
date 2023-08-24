@@ -25,6 +25,17 @@ const vector<int> vtwo = { 1,2 };
 const vector<int> vthree = { 1,2,3 };
 const vector<int> vfour = { 1,2,4 };
 
+/// <summary>
+/// Prints the answer as a string like n^a * n^b = n^c etc.
+/// </summary>
+/// <param name="ostr"></param>
+/// <param name="v"></param>
+void printpowers(ofstream& ostr, vector<int>& v) {
+    for (size_t i = 1; i < v.size(); i++) {
+        ostr << "n^" << v[i - 1] << " * n^" << v[i] - v[i - 1] << " = n^" << v[i] << endl;
+    }
+}
+
 void outarr(vector<int>& v) {
     cout << "vector v: ";
     for (int i : v) {
@@ -975,20 +986,21 @@ void solveAll() {
     auto start = std::chrono::high_resolution_clock::now();
 
     size_t s = 0;
-    for (int k = 1; k <= 200; k++) {
+    for (int k = 2; k <= 200; k++) {
         //vector<int> v = { 1 };
-        minsteps = 20; // initial steps
+        minsteps = 15; // initial steps
         //getmBF03(k, v);
         //s += minsteps;
         //cout << " M(" << k << ") = " << minsteps << " S = " << s << endl;
         //outf << " M(" << k << ") = " << minsteps << " S = " << s << endl;
-        vector<int> vin = { 1 };
+        vector<int> vin = { 1,2 };
         vector<int> vout = getmBF081(k, vin, minsteps, 0);
         s += vout.size() - 1;
         //cout << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
         outf << " M(" << k << ") = " << vout.size() - 1 << " S = " << s;
         //outarr(" powers of k: ", vout);
         outarr(outf, " powers of k: ", vout);
+        printpowers(outf, vout);
     }
 
     auto stop = std::chrono::high_resolution_clock::now();
