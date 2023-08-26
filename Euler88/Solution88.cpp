@@ -36,6 +36,18 @@ int getsum(int k, const int* a) {
     return ret;
 }
 
+struct bres
+{
+    bres(bool balanced, int p, int s) {
+        this->balanced = balanced;
+        this->p = p;
+        this->s = s;
+    }
+    bool balanced;
+    int p;
+    int s;
+};
+
 /// <summary>
 /// Tries to balance the array so that the product is equal to the sum.
 /// </summary>
@@ -43,7 +55,7 @@ int getsum(int k, const int* a) {
 /// <param name="a">The array.</param>
 /// <param name="i">Incremented term.</param>
 /// <param name="j">Reduced term.</param>
-bool balance(int k, int* a, int i, int j) {
+bres balance(int k, int* a, int i, int j) {
     bool balanced = false;
     int p = getproduct(k, a);
     int s = getsum(k, a);
@@ -77,7 +89,7 @@ bool balance(int k, int* a, int i, int j) {
     cout << "a[" << i << "] = " << a[i] << endl;
     cout << "a[" << j << "] = " << a[j] << endl;
     cout << "P = " << p << "; S = " << s << endl;
-    return balanced;
+    return bres(balanced, p, s);
 }
 
 void solve() {
@@ -93,21 +105,61 @@ void solve() {
     int* a = new int[k + 1];
     fillup(k, a); // initial fill-up with 1-s
 
-    int i = 2; // incremented
-    int j = 1; // decremented
-    int aiprev = a[i];
-    int ajprev = a[j];
-    while (!balance(k, a, i, j)) {
-        if (a[j] == ajprev) { // 
-            a[j]--;
-            a[j - 1]++;
+    // start balancing with the balance (1,2)
+    int incr = 2; // incremented index, start with adding 2-s
+    int decr = 1; // decremented index
+    int incrprev = incr;
+    int decrprev = decr;
+    int aincrprev = a[incr];
+    int adecrprev = a[decr];
+
+    // start balancing and loop until balance is reached
+    bres res = balance(k, a, incr, decr);
+    while (!res.balanced) {
+
+        // not balanced, i.e. product < sum
+        // Options:
+        // 1) some adding elements were succesfully added (for example 1...1 -> 1...12...2)
+        //    In this case we want to go further, and start balancing the next elements like:
+        //    1...12...2 -> 1...12...23...3
+        // 2) no elements were added (1...1 -> 1...1 or 1...12...2 -> 1...12...2) 
+        //    because even one new element breaks the balance (so that product becomes > sum)
+        //    In this case we can't increment adding element, and all we can do
+        //    is go back to the previos indexes and reduce number of the greater element
+        //    For example if we have n1 ones and n2 twos: 1...12...2, make n1++ and n2--
+        //    and try adding 3 again.
+        //    Note that we can do that if n2 > 1.
+        //    If n2 = 1, try to increment the elements iself and balance with (1,3) instead of (1,2)
+
+        if (a[incr] == aincrprev) { // no elements were inserted, get back
+
+            if (a[decr] > 1) {
+                incr = incrprev;
+                decr = decrprev;
+                a[incr]--;
+                a[decr]++;
+            }
+            else {
+
+            }
+
+
+            incr = incrprev;
+            decr = decrprev;
+            a[incr]++;
+            a[decr]--;
         }
-        else {
-            i++;
-            j++;
+        else { // some i were inserted succesfully
+            incr++;
+            decr++;
         }
-        aiprev = a[i];
-        ajprev = a[j];
+        incrprev = incr;
+        decrprev = decr;
+        aincrprev = a[incr];
+        adecrprev = a[decr];
+
+        // re-balance
+        res = balance(k, a, incr, decr);
     }
 
     auto stop = std::chrono::high_resolution_clock::now();
