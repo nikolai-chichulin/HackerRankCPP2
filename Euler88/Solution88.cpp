@@ -195,44 +195,54 @@ bool spin(int k, int* a, int l, int depth) {
 }
 
 /// <summary>
-/// Spins all elements starting with l-th.
+/// Recursively spins all elements of the given array starting with l-th.
 /// </summary>
-/// <param name="k"></param>
-/// <param name="a"></param>
-/// <param name="l"></param>
+/// <param name="k">The original k.</param>
+/// <param name="length">The actual length of the given array.</param>
+/// <param name="a">The shortened array of elements.</param>
+/// <param name="l">The starting index to spin.</param>
+/// <param name="depth">Recursion depth.</param>
+/// <param name="addition">The number of ones.</param>
 /// <returns></returns>
-bool spinshort(int k, int* a, int l, int depth, int addition) {
+bool spin_v01(int k, int length, int* a, int l, int depth, int addition) {
     depth++;
     irecursion++;
     int istart = l == 0 ? 2 : a[l - 1];
-    int iend = l == 0 ? 3 : k;
-    for (int i = istart; i < iend; i++) {
+    for (int i = istart; i <= k; i++) {
         a[l] = i;
         outf1 << "l = " << l << " a[l] = " << i << endl;
         // recursive call for all the elements but the last one
-        if (l < k - 1) {
+        if (l < length - 1) {
+            // before the recursive call we can do an estimate of the product and sum
+            int p = getproductdir(length, a);
+            int s = getsumdir(length, a) + addition;
+            if (p > s) {
+                outf1 << "p > s, break on depth = " << depth << endl;
+                break;
+            }
             outf1 << "recursive call..." << endl;
-            if (spinshort(k, a, l + 1, depth, addition)) {
-                outf1 << "return true" << endl;
+            if (spin_v01(k, length, a, l + 1, depth, addition)) {
+                outf1 << "found the array!" << endl;
                 return true;
             }
         }
         else { // estimate the product and sum for the last element only!
             outf1 << "the last element!" << endl;
-            outarr(outf1, "Array: ", a, k);
-            int p = getproductdir(k, a);
-            int s = getsumdir(k, a) + addition;
+            outarr(outf1, "Array: ", a, length);
+            int p = getproductdir(length, a);
+            int s = getsumdir(length, a) + addition;
             outf1 << "p = " << p << " s = " << s << endl;
             if (p == s) {
                 outf1 << "found the number, return true" << endl;
                 return true;
             }
             else if (p > s) {
-                outf1 << "p > s, break" << endl;
+                outf1 << "p > s, break on depth = " << depth << endl;
                 break;
             }
         }
     }
+    a[l] = 2; // back to the minimum
     outf1 << "return false" << endl;
     return false;
 }
@@ -357,9 +367,16 @@ void solve(int k) {
     //outf1.close();
     //outf2.close();
     //outf3.close();
+    delete[] a;
 }
 
-void solveBF(int k) {
+void solveBF_v01(int k) {
+
+    if (k == 1) {
+        cout << "N(" << k << ") = " << 1 << endl;
+        outf1 << "N(" << k << ") = " << 1 << endl;
+        return;
+    }
 
     outf1.open("test1.out");
     //outf2.open("test2.out");
@@ -367,67 +384,66 @@ void solveBF(int k) {
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    // error code
-    int err = 0;
-
-    // initial array
+    // initial array of multipliers counts
     int* multipliers = new int[k + 1];
-    fillup(k, multipliers); // initial fill-up with 1-s
+    fillup(k, multipliers); // initially only 1-s
 
     // maximally fill up the array with twos: 1,... 1, 2,... 2.
     bres res = balance(k, multipliers, 2, 1);
 
-    // get the direct array of added twos: 2...2
+    // now get the shortened array consisted of only added twos: 2...2
     int depth = 0;
-    int l = res.replaced;
-    int addition = k - l;
+    int l = res.replaced; // length
+    int addition = k - l; // number of ones which must be added to the sum
     int* shortarray = new int[l];
     fillup(l, shortarray, 2);
 
-    // and call the main function
-    bool ret = spinshort(l, shortarray, 0, depth, addition);
-
-    delete[] shortarray;
-    l--;
-    addition++;
-    shortarray = new int[l];
-    fillup(l, shortarray, 2);
-    ret = spinshort(l, shortarray, 0, depth, addition);
-
-    delete[] shortarray;
-    l--;
-    addition++;
-    shortarray = new int[l];
-    fillup(l, shortarray, 2);
-    ret = spinshort(l, shortarray, 0, depth, addition);
+    // and call the main function in loop
+    bool ret = true;
+    while (!spin_v01(k, l, shortarray, 0, depth, addition)) {
+        outf1 << "Shortened the array!" << endl;
+        delete[] shortarray;
+        l--;
+        if (l == 1) {
+            ret = false;
+            break;
+        }
+        addition++;
+        shortarray = new int[l];
+        fillup(l, shortarray, 2);
+    }
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     double t = duration.count() / 1E6;
     if (ret) {
-        int s = getsumdir(res.replaced, shortarray) + k - res.replaced;
+        int s = getsumdir(l, shortarray) + addition;
         cout << "N(" << k << ") = " << s << endl;
         outf1 << "N(" << k << ") = " << s << endl;
-        outarr(outf1, "Final array: ", shortarray, k);
-        outarr(cout, "Final array: ", shortarray, k);
+        outarr(outf1, "Final array: ", shortarray, l);
+        outarr(cout, "Final array: ", shortarray, l);
+        delete[] shortarray;
     }
     else {
-        cout << "Unsuccesfull!" << endl;
+        cout << "N(" << k << ") - unsuccesfull " << endl;
+        outf1 << "N(" << k << ") - unsuccesfull " << endl;
     }
     outf1 << endl;
     outf1 << "Ncalls            = " << irecursion << endl;
     outf1 << "Execution time    = " << t << " s" << endl;
-    //outf1 << "Execution time    = " << t << " s" << endl;
+    cout << "Execution time    = " << t << " s" << endl;
 
     outf1.close();
     //outf2.close();
     //outf3.close();
+
+    delete[]  multipliers;
 }
 
 int main() {
 
-    for (int k = 50; k <= 50; k++) {
-        solveBF(k);
+    for (int k = 12000; k <= 12000; k++) {
+        solveBF_v01(k);
     }
 
     return 0;
