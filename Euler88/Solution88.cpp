@@ -14,7 +14,7 @@ ofstream outf1, outf2, outf3;
 
 int irecursion = 0;
 
-void outarr(ofstream& ostr, string s, const int* v, int k) {
+void outarr(ostream& ostr, string s, const int* v, int k) {
     ostr << s;
     for (int i = 0; i < k; i++) {
         ostr << " " << v[i];
@@ -30,8 +30,14 @@ void fillup(int k, int* a) {
     }
 }
 
+void fillup(int k, int* a, int v) {
+    for (int i = 0; i < k; i++) {
+        a[i] = v;
+    }
+}
+
 int* getdirectarray(int k, const int* a) {
-    int* ret = new int(k);
+    int* ret = new int[k];
     int l = 0;
     for (int i = 0; i < k; i++) {
         ret[i] = 0;
@@ -101,7 +107,7 @@ struct bres
 /// <param name="i">Incremented element.</param>
 /// <param name="j">Decremented element.</param>
 bres balance(int k, int* a, int i, int j) {
-    bool output = true;
+    bool output = false;
     bool balanced = false;
     int p = getproduct(k, a);
     int s = getsum(k, a);
@@ -154,15 +160,16 @@ bres balance(int k, int* a, int i, int j) {
 /// <param name="a"></param>
 /// <param name="l"></param>
 /// <returns></returns>
-bool spin(int k, int* a, int l) {
+bool spin(int k, int* a, int l, int depth) {
+    depth++;
     irecursion++;
-    for (int i = 1; i < k; i++) {
+    for (int i = a[l - 1]; i < k; i++) {
         a[l] = i;
         outf1 << "l = " << l << " a[l] = " << i << endl;
         // recursive call for all the elements but the last one
         if (l < k - 1) {
             outf1 << "recursive call..." << endl;
-            if (spin(k, a, l + 1)) {
+            if (spin(k, a, l + 1, depth)) {
                 outf1 << "return true" << endl;
                 return true;
             }
@@ -172,6 +179,49 @@ bool spin(int k, int* a, int l) {
             outarr(outf1, "Array: ", a, k);
             int p = getproductdir(k, a);
             int s = getsumdir(k, a);
+            outf1 << "p = " << p << " s = " << s << endl;
+            if (p == s) {
+                outf1 << "found the number, return true" << endl;
+                return true;
+            }
+            else if (p > s) {
+                outf1 << "p > s, break" << endl;
+                break;
+            }
+        }
+    }
+    outf1 << "return false" << endl;
+    return false;
+}
+
+/// <summary>
+/// Spins all elements starting with l-th.
+/// </summary>
+/// <param name="k"></param>
+/// <param name="a"></param>
+/// <param name="l"></param>
+/// <returns></returns>
+bool spinshort(int k, int* a, int l, int depth, int addition) {
+    depth++;
+    irecursion++;
+    int istart = l == 0 ? 2 : a[l - 1];
+    int iend = l == 0 ? 3 : k;
+    for (int i = istart; i < iend; i++) {
+        a[l] = i;
+        outf1 << "l = " << l << " a[l] = " << i << endl;
+        // recursive call for all the elements but the last one
+        if (l < k - 1) {
+            outf1 << "recursive call..." << endl;
+            if (spinshort(k, a, l + 1, depth, addition)) {
+                outf1 << "return true" << endl;
+                return true;
+            }
+        }
+        else { // estimate the product and sum for the last element only!
+            outf1 << "the last element!" << endl;
+            outarr(outf1, "Array: ", a, k);
+            int p = getproductdir(k, a);
+            int s = getsumdir(k, a) + addition;
             outf1 << "p = " << p << " s = " << s << endl;
             if (p == s) {
                 outf1 << "found the number, return true" << endl;
@@ -327,28 +377,45 @@ void solveBF(int k) {
     // maximally fill up the array with twos: 1,... 1, 2,... 2.
     bres res = balance(k, multipliers, 2, 1);
 
-    // get the direct array and call the main function
-    int* directarray = getdirectarray(k, multipliers);
-    bool ret = spin(k, directarray, k - res.replaced);
-    int s = getsumdir(k, directarray);
+    // get the direct array of added twos: 2...2
+    int depth = 0;
+    int l = res.replaced;
+    int addition = k - l;
+    int* shortarray = new int[l];
+    fillup(l, shortarray, 2);
+
+    // and call the main function
+    bool ret = spinshort(l, shortarray, 0, depth, addition);
+
+    delete[] shortarray;
+    l--;
+    addition++;
+    shortarray = new int[l];
+    fillup(l, shortarray, 2);
+    ret = spinshort(l, shortarray, 0, depth, addition);
+
+    delete[] shortarray;
+    l--;
+    addition++;
+    shortarray = new int[l];
+    fillup(l, shortarray, 2);
+    ret = spinshort(l, shortarray, 0, depth, addition);
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     double t = duration.count() / 1E6;
     if (ret) {
+        int s = getsumdir(res.replaced, shortarray) + k - res.replaced;
         cout << "N(" << k << ") = " << s << endl;
         outf1 << "N(" << k << ") = " << s << endl;
+        outarr(outf1, "Final array: ", shortarray, k);
+        outarr(cout, "Final array: ", shortarray, k);
     }
     else {
         cout << "Unsuccesfull!" << endl;
     }
-    outf1 << "Array: ";
-    for (int i = 0; i < k; i++) {
-        if (directarray[i] > 0) {
-            outf1 << directarray[i] << " ";
-        }
-    }
     outf1 << endl;
+    outf1 << "Ncalls            = " << irecursion << endl;
     outf1 << "Execution time    = " << t << " s" << endl;
     //outf1 << "Execution time    = " << t << " s" << endl;
 
