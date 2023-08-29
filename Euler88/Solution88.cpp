@@ -265,42 +265,106 @@ int spin_v02(int k, int length, int* a, int l, int depth, int addition, int mins
     int istart = l == 0 ? 2 : a[l - 1];
     for (int i = istart; i <= k; i++) {
         a[l] = i;
-        //outf1 << "l = " << l << " a[l] = " << i << endl;
+        outf1 << "l = " << l << " a[l] = " << i << endl;
         // recursive call for all the elements but the last one
         if (l < length - 1) {
             // before the recursive call we can do an estimate of the product and sum
             int p = getproductdir(length, a);
             int s = getsumdir(length, a) + addition;
             if (p > s) {
-                //outf1 << "p > s, break on depth = " << depth << endl;
+                outf1 << "p > s, break at depth = " << depth << endl;
                 break;
             }
-            //outf1 << "recursive call..." << endl;
+            outf1 << "recursive call..." << endl;
             int tmp = spin_v02(k, length, a, l + 1, depth, addition, minsofar);
             if (tmp < ret) {
                 ret = tmp;
-                //outf1 << "found the new record: " << tmp << endl;
+                outf1 << "----->>> depth " << depth << ", got the new record " << tmp;
+                outarr(outf1, " : ", a, length);
             }
         }
         else { // estimate the product and sum for the last element only!
-            //outf1 << "the last element!" << endl;
-            //outarr(outf1, "Array: ", a, length);
+            outf1 << "the last level";
+            outarr(outf1, " : ", a, length);
             int p = getproductdir(length, a);
             int s = getsumdir(length, a) + addition;
-            //outf1 << "p = " << p << " s = " << s << endl;
+            outf1 << "p = " << p << " s = " << s << endl;
             if (p == s) {
-                //outf1 << "found the number: " << p << endl;
+                outf1 << "----->>> found the number at the last level: " << p;
+                outarr(outf1, " : ", a, length);
                 ret = p;
                 break;
             }
             else if (p > s) {
-                //outf1 << "p > s, break on depth = " << depth << endl;
+                outf1 << "p > s, break at the last level, depth = " << depth << endl;
                 break;
             }
         }
     }
     a[l] = 2; // back to the minimum
-    //outf1 << "normal return" << endl;
+    return ret;
+}
+
+/// <summary>
+/// Recursively spins all elements of the given array starting with l-th.
+/// </summary>
+/// <param name="k">The original k.</param>
+/// <param name="length">The actual length of the given array.</param>
+/// <param name="a">The shortened array of elements.</param>
+/// <param name="l">The starting index to spin.</param>
+/// <param name="depth">Recursion depth.</param>
+/// <param name="addition">The number of ones.</param>
+/// <returns></returns>
+int spin_v03(int k, int length, int* a, int l, int depth, int addition, int minsofar) {
+    depth++;
+    irecursion++;
+    int ret = minsofar;
+
+    // further logic differs for the first l-1 elements and the last one
+    if (l < length - 1) { // first l-1 elements
+        int istart = l == 0 ? 2 : a[l - 1];
+        for (int i = istart; i <= k; i++) {
+            a[l] = i;
+            //outf1 << "l = " << l << " a[l] = " << i << endl;
+            // recursive call for all the elements but the last one
+                // before the recursive call we can do an estimate of the product and sum
+            int p = getproductdir(length, a);
+            int s = getsumdir(length, a) + addition;
+            if (p > s) {
+                //outf1 << "p > s, break at depth = " << depth << endl;
+                break;
+            }
+            //outf1 << "recursive call..." << endl;
+            int tmp = spin_v03(k, length, a, l + 1, depth, addition, minsofar);
+            if (tmp < ret) {
+                ret = tmp;
+                //outf1 << "----->>> depth " << depth << ", got the new record " << tmp;
+                //outarr(outf1, " : ", a, length);
+            }
+        }
+    }
+    else { // the last element
+        //outf1 << "the last level, the array is:";
+        //outarr(outf1, " ", a, length);
+        // we know all the elements but the last one
+        // {a0,a1,a2,...,al-1}
+        a[l] = 1;
+        int p = getproductdir(length, a);
+        a[l] = 0;
+        int s = getsumdir(length, a) + addition;
+        if (s % (p - 1) == 0) {
+            a[l] = s / (p - 1);
+            p = getproductdir(length, a);
+            s = getsumdir(length, a) + addition;
+            if (p == s) {
+                //outf1 << "----->>> found the number at the last level: " << p;
+                //outarr(outf1, " : ", a, length);
+                ret = p;
+            }
+        }
+    }
+
+    a[l] = 2; // back to the minimum
     return ret;
 }
 
@@ -506,7 +570,7 @@ int solveBF_v02(int k) {
         return 4;
     }
 
-    //outf1.open("test1.out");
+    outf1.open("test1.out");
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -538,6 +602,82 @@ int solveBF_v02(int k) {
         if (l == 2) {
             break;
         }
+        outf1 << "Shorten the array!" << endl;
+        l--;
+        addition++;
+        delete[] shortarray;
+        shortarray = new int[l];
+        fillup(l, shortarray, 2);
+    }
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    double t = duration.count() / 1E6;
+    if (ret) {
+        int s = getsumdir(l, shortarray) + addition;
+        cout << "N(" << k << ") = " << minnumber;
+        outarr(cout, " : ", shortarray, l);
+        outf1 << "N(" << k << ") = " << minnumber;
+        outarr(outf1, " : ", shortarray, l);
+        delete[] shortarray;
+    }
+    else {
+        cout << "N(" << k << ") - unsuccesfull " << endl;
+        outf1 << "N(" << k << ") - unsuccesfull " << endl;
+    }
+    outf1 << endl;
+    outf1 << "Ncalls            = " << irecursion << endl;
+    outf1 << "Execution time    = " << t << " s" << endl;
+    cout << "Execution time    = " << t << " s" << endl;
+
+    outf1.close();
+
+    delete[]  multipliers;
+
+    return minnumber;
+}
+
+int solveBF_v03(int k) {
+
+    if (k == 1) {
+        return 1;
+    }
+    else if (k == 2) {
+        return 4;
+    }
+
+    //outf1.open("test1.out");
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // initial array of multipliers counts
+    int* multipliers = new int[k + 1];
+    fillup(k, multipliers); // initially only 1-s
+
+    // maximally fill up the array with twos: 1,... 1, 2,... 2.
+    bres res = balance(k, multipliers, 2, 1);
+
+    // now get the shortened array consisted of only added twos: 2...2
+    int depth = 0;
+    int l = res.replaced; // length
+    int addition = k - l; // number of ones which must be added to the sum
+    int* shortarray = new int[l];
+    fillup(l, shortarray, 2);
+
+    // and call the main function in loop
+    int minnumber = std::numeric_limits<int>::max();
+    int minl = 1000;
+    bool ret = false;
+    while (true) {
+        int tmp = spin_v03(k, l, shortarray, 0, depth, addition, minnumber);
+        if (tmp > 0 && tmp < minnumber) {
+            minnumber = tmp;
+            minl = l;
+            ret = true;
+        }
+        if (l == 2) {
+            break;
+        }
         //outf1 << "Shorten the array!" << endl;
         l--;
         addition++;
@@ -551,10 +691,10 @@ int solveBF_v02(int k) {
     double t = duration.count() / 1E6;
     if (ret) {
         int s = getsumdir(l, shortarray) + addition;
-        //cout << "N(" << k << ") = " << minnumber << endl;
-        //outf1 << "N(" << k << ") = " << minnumber << endl;
-        //outarr(outf1, "Final array: ", shortarray, l);
-        //outarr(cout, "Final array: ", shortarray, l);
+        //cout << "N(" << k << ") = " << minnumber;
+        //outarr(cout, " : ", shortarray, l);
+        //outf1 << "N(" << k << ") = " << minnumber;
+        //outarr(outf1, " : ", shortarray, l);
         delete[] shortarray;
     }
     else {
@@ -580,7 +720,7 @@ void solvesum() {
 
     int k = 12000;
     for (int ik = 2; ik <= k; ik++) {
-        int res = solveBF_v02(ik);
+        int res = solveBF_v03(ik);
         if (mask[res] == 0) {
             mask[res] = ik;
         }
@@ -610,7 +750,7 @@ void solvesum() {
 
 int main() {
 
-    int res = solveBF_v02(20);
-    //solvesum();
+    //int res = solveBF_v03(12000);
+    solvesum();
     return 0;
 }
