@@ -12,6 +12,7 @@ typedef signed long long int li;
 
 ofstream outf1, outf2, outf3;
 
+int mask[20000] = {};
 int irecursion = 0;
 
 void outarr(ostream& ostr, string s, const int* v, int k) {
@@ -247,6 +248,62 @@ bool spin_v01(int k, int length, int* a, int l, int depth, int addition) {
     return false;
 }
 
+/// <summary>
+/// Recursively spins all elements of the given array starting with l-th.
+/// </summary>
+/// <param name="k">The original k.</param>
+/// <param name="length">The actual length of the given array.</param>
+/// <param name="a">The shortened array of elements.</param>
+/// <param name="l">The starting index to spin.</param>
+/// <param name="depth">Recursion depth.</param>
+/// <param name="addition">The number of ones.</param>
+/// <returns></returns>
+int spin_v02(int k, int length, int* a, int l, int depth, int addition, int minsofar) {
+    depth++;
+    irecursion++;
+    int ret = minsofar;
+    int istart = l == 0 ? 2 : a[l - 1];
+    for (int i = istart; i <= k; i++) {
+        a[l] = i;
+        //outf1 << "l = " << l << " a[l] = " << i << endl;
+        // recursive call for all the elements but the last one
+        if (l < length - 1) {
+            // before the recursive call we can do an estimate of the product and sum
+            int p = getproductdir(length, a);
+            int s = getsumdir(length, a) + addition;
+            if (p > s) {
+                //outf1 << "p > s, break on depth = " << depth << endl;
+                break;
+            }
+            //outf1 << "recursive call..." << endl;
+            int tmp = spin_v02(k, length, a, l + 1, depth, addition, minsofar);
+            if (tmp < ret) {
+                ret = tmp;
+                //outf1 << "found the new record: " << tmp << endl;
+            }
+        }
+        else { // estimate the product and sum for the last element only!
+            //outf1 << "the last element!" << endl;
+            //outarr(outf1, "Array: ", a, length);
+            int p = getproductdir(length, a);
+            int s = getsumdir(length, a) + addition;
+            //outf1 << "p = " << p << " s = " << s << endl;
+            if (p == s) {
+                //outf1 << "found the number: " << p << endl;
+                ret = p;
+                break;
+            }
+            else if (p > s) {
+                //outf1 << "p > s, break on depth = " << depth << endl;
+                break;
+            }
+        }
+    }
+    a[l] = 2; // back to the minimum
+    //outf1 << "normal return" << endl;
+    return ret;
+}
+
 void solve(int k) {
 
     //outf1.open("test1.out");
@@ -440,11 +497,120 @@ void solveBF_v01(int k) {
     delete[]  multipliers;
 }
 
-int main() {
+int solveBF_v02(int k) {
 
-    for (int k = 12000; k <= 12000; k++) {
-        solveBF_v01(k);
+    if (k == 1) {
+        return 1;
+    }
+    else if (k == 2) {
+        return 4;
     }
 
+    //outf1.open("test1.out");
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    // initial array of multipliers counts
+    int* multipliers = new int[k + 1];
+    fillup(k, multipliers); // initially only 1-s
+
+    // maximally fill up the array with twos: 1,... 1, 2,... 2.
+    bres res = balance(k, multipliers, 2, 1);
+
+    // now get the shortened array consisted of only added twos: 2...2
+    int depth = 0;
+    int l = res.replaced; // length
+    int addition = k - l; // number of ones which must be added to the sum
+    int* shortarray = new int[l];
+    fillup(l, shortarray, 2);
+
+    // and call the main function in loop
+    int minnumber = std::numeric_limits<int>::max();
+    int minl = 1000;
+    bool ret = false;
+    while (true) {
+        int tmp = spin_v02(k, l, shortarray, 0, depth, addition, minnumber);
+        if (tmp > 0 && tmp < minnumber) {
+            minnumber = tmp;
+            minl = l;
+            ret = true;
+        }
+        if (l == 2) {
+            break;
+        }
+        //outf1 << "Shorten the array!" << endl;
+        l--;
+        addition++;
+        delete[] shortarray;
+        shortarray = new int[l];
+        fillup(l, shortarray, 2);
+    }
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    double t = duration.count() / 1E6;
+    if (ret) {
+        int s = getsumdir(l, shortarray) + addition;
+        //cout << "N(" << k << ") = " << minnumber << endl;
+        //outf1 << "N(" << k << ") = " << minnumber << endl;
+        //outarr(outf1, "Final array: ", shortarray, l);
+        //outarr(cout, "Final array: ", shortarray, l);
+        delete[] shortarray;
+    }
+    else {
+        //cout << "N(" << k << ") - unsuccesfull " << endl;
+        //outf1 << "N(" << k << ") - unsuccesfull " << endl;
+    }
+    //outf1 << endl;
+    //outf1 << "Ncalls            = " << irecursion << endl;
+    //outf1 << "Execution time    = " << t << " s" << endl;
+    //cout << "Execution time    = " << t << " s" << endl;
+
+    //outf1.close();
+
+    delete[]  multipliers;
+
+    return minnumber;
+}
+
+void solvesum() {
+    outf2.open("test2.out");
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    int k = 12000;
+    for (int ik = 2; ik <= k; ik++) {
+        int res = solveBF_v02(ik);
+        if (mask[res] == 0) {
+            mask[res] = ik;
+        }
+        if (ik % 100 == 0)
+            cout << ik << " " << res << endl;
+        outf2 << ik << " " << res << endl;
+    }
+
+    int sum = 0;
+    for (int ik = 2; ik < 20000; ik++) {
+        if (mask[ik] > 0 && mask[ik] <= k)
+            sum += ik;
+    }
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    double t = duration.count() / 1E6;
+
+    cout << "Answer = " << sum << endl;
+    cout << "Overall execution time    = " << t << " s" << endl;
+    outf2 << "Answer = " << sum << endl;
+    outf2 << "Overall execution time    = " << t << " s" << endl;
+
+    outf2.close();
+}
+
+
+int main() {
+
+    int res = solveBF_v02(20);
+    //solvesum();
     return 0;
 }
