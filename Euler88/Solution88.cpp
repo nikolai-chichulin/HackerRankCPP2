@@ -434,6 +434,78 @@ int spin_v04(int k, int length, int* a, int l, int depth, int addition, int mins
     return ret;
 }
 
+/// <summary>
+/// Recursively spins all elements of the given array starting with l-th.
+/// </summary>
+/// <param name="k">The original k.</param>
+/// <param name="length">The actual length of the given array.</param>
+/// <param name="a">The shortened array of elements.</param>
+/// <param name="l">The starting index to spin.</param>
+/// <param name="depth">Recursion depth.</param>
+/// <param name="addition">The number of ones.</param>
+/// <returns></returns>
+int spin_v05(int k, int length, int* a, int l, int depth, int addition, int minsofar) {
+    depth++;
+    irecursion++;
+    int ret = minsofar;
+
+    // further logic differs for the first l-1 elements and the last one
+    // 1. for the first elements do the following loop:
+    //    2222222222
+    //    2333333333
+    //    2233333333
+    //    2223333333
+    //    2222333333 etc.
+    //
+    if (l < length - 1) { // first l-1 elements
+        int istart = l == 0 ? 2 : a[l - 1];
+        for (int i = istart; i <= k; i++) {
+            for (int il = l; il < length; il++) {
+                a[il] = i;
+            }
+            //outf1 << "l = " << l << " a[l] = " << i << endl;
+            // recursive call for all the elements but the last one
+            // before the recursive call we can do an estimate of the product and sum
+            int p = getproductdir(length, a);
+            int s = getsumdir(length, a) + addition;
+            if (p > s) {
+                //outf1 << "p > s, break at depth = " << depth << endl;
+                break;
+            }
+            //outf1 << "recursive call..." << endl;
+            int tmp = spin_v05(k, length, a, l + 1, depth, addition, minsofar);
+            if (tmp < ret) {
+                ret = tmp;
+                //outf1 << "----->>> depth " << depth << ", got the new record " << tmp;
+                //outarr(outf1, " : ", a, length);
+            }
+        }
+    }
+    else { // the last element
+        //outf1 << "the last level, the array is:";
+        //outarr(outf1, " ", a, length);
+        // we know all the elements but the last one
+        // {a0,a1,a2,...,al-1}
+        a[l] = 1;
+        int p = getproductdir(length, a);
+        a[l] = 0;
+        int s = getsumdir(length, a) + addition;
+        if (s % (p - 1) == 0) {
+            a[l] = s / (p - 1);
+            p = getproductdir(length, a);
+            s = getsumdir(length, a) + addition;
+            if (p == s) {
+                //outf1 << "----->>> found the number at the last level: " << p;
+                //outarr(outf1, " : ", a, length);
+                ret = p;
+            }
+        }
+    }
+
+    a[l] = 2; // back to the minimum
+    return ret;
+}
+
 void solve(int k) {
 
     //outf1.open("test1.out");
@@ -712,7 +784,7 @@ int solveBF_v03(int k) {
         return 4;
     }
 
-    outf1.open("test1.out");
+    //outf1.open("test1.out");
 
     auto start = std::chrono::high_resolution_clock::now();
 
@@ -735,7 +807,7 @@ int solveBF_v03(int k) {
     int minl = 1000;
     bool ret = false;
     while (true) {
-        int tmp = spin_v04(k, l, shortarray, 0, depth, addition, minnumber);
+        int tmp = spin_v05(k, l, shortarray, 0, depth, addition, minnumber);
         if (tmp > 0 && tmp < minnumber) {
             minnumber = tmp;
             minl = l;
@@ -757,22 +829,22 @@ int solveBF_v03(int k) {
     double t = duration.count() / 1E6;
     if (ret) {
         int s = getsumdir(l, shortarray) + addition;
-        cout << "N(" << k << ") = " << minnumber;
-        outarr(cout, " : ", shortarray, l);
-        outf1 << "N(" << k << ") = " << minnumber;
-        outarr(outf1, " : ", shortarray, l);
+        //cout << "N(" << k << ") = " << minnumber;
+        //outarr(cout, " : ", shortarray, l);
+        //outf1 << "N(" << k << ") = " << minnumber;
+        //outarr(outf1, " : ", shortarray, l);
         delete[] shortarray;
     }
     else {
-        cout << "N(" << k << ") - unsuccesfull " << endl;
-        outf1 << "N(" << k << ") - unsuccesfull " << endl;
+        //cout << "N(" << k << ") - unsuccesfull " << endl;
+        //outf1 << "N(" << k << ") - unsuccesfull " << endl;
     }
-    outf1 << endl;
-    outf1 << "Ncalls            = " << irecursion << endl;
-    outf1 << "Execution time    = " << t << " s" << endl;
-    cout << "Execution time    = " << t << " s" << endl;
+    //outf1 << endl;
+    //outf1 << "Ncalls            = " << irecursion << endl;
+    //outf1 << "Execution time    = " << t << " s" << endl;
+    //cout << "Execution time    = " << t << " s" << endl;
 
-    outf1.close();
+    //outf1.close();
 
     delete[]  multipliers;
 
@@ -816,7 +888,7 @@ void solvesum() {
 
 int main() {
 
-    int res = solveBF_v03(12000);
-    //solvesum();
+    //int res = solveBF_v03(12000);
+    solvesum();
     return 0;
 }
