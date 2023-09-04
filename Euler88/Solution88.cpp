@@ -25,9 +25,9 @@ struct result
         this->number = number;
         this->count = count;
     }
-    bool found;
-    int number;
-    int count;
+    bool found; // found or not
+    int number; // the product-sum number
+    int count; // non-unity elements
 };
 
 result f(int k, int l, int pprev, int sprev, int level, int aprev, int countprev, bool output) {
@@ -43,6 +43,7 @@ result f(int k, int l, int pprev, int sprev, int level, int aprev, int countprev
                     ret.found = true;
                     ret.number = p;
                     ret.count = countprev + 1;
+                    outf << "Level " << level << " with the element " << x << " found a product-sum number " << p << " !!!" << endl;
                     if (output)
                         cout << "Found a number: " << p << " count: " << ret.count << endl;
                 }
@@ -51,30 +52,37 @@ result f(int k, int l, int pprev, int sprev, int level, int aprev, int countprev
         return ret;
     }
 
+    outf << "Level " << level << " started looping with pprev " << pprev << " and sprev " << sprev << endl;
     for (int ai = aprev; ai <= k; ai++) {
         int count = ai > 1 ? countprev + 1 : countprev;
         int pact = pprev * ai;
         int sact = sprev + ai;
-        int pfull_min = pact * int(pow(ai, l - level));
+        int pfull_min = pact * int(pow(ai, l - level)); // provided all the rest elements are equal to ai too
         int sfull_min = sact + ai * (l - level);
         if (pfull_min == sfull_min) {
             count = l - level + 1;
+            outf << "Level " << level << " found a product-sum number " << pfull_min << " !!!" << endl;
             if (output)
                 cout << "Found a number: " << pfull_min << " count: " << count << endl;
             return result(true, pfull_min, count);
         }
         if (pfull_min > sfull_min) {
+            outf << "Level " << level << " returning due to p > s for ai " << ai << endl;
             return ret;
         }
+        outf << "Level " << level << " making a recursive call for ai " << ai << " ->" << endl;
         result res = f(k, l, pact, sact, level, ai, count, output);
         if (res.found && res.number < ret.number) {
             ret = res;
         }
     }
+    outf << "Level " << level << " normal returning" << endl;
     return ret;
 }
 
 result solve_single(int k, bool output) {
+
+    outf.open("test_single.dat");
     auto start = std::chrono::high_resolution_clock::now();
 
     if (k == 1) {
@@ -108,6 +116,7 @@ result solve_single(int k, bool output) {
         cout << "Count of elements > 1 = " << ret.count << endl;
         cout << "Execution time        = " << t << " s" << endl;
     }
+    outf.close();
     return ret;
 }
 
@@ -184,8 +193,8 @@ int main() {
 
     int k = 200000;
     //int res = solve_sum(k);
-    solve_multi(k);
-    //result res = solve_single(k, true);
+    //solve_multi(k);
+    result res = solve_single(k, true);
 
     return 0;
 }
