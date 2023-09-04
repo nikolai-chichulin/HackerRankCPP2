@@ -10,18 +10,29 @@
 using namespace std;
 
 ofstream outf;
-ofstream outlevel[20];
 
 const int pmax = numeric_limits<int>::max();
-int ncalls = 0;
 
-int f(int k, int l, int pprev, int sprev, int level, int aprev) {
-    //ncalls++;
+struct result
+{
+    result() {
+        this->found = false;
+        this->number = 0;
+        this->count = 0;
+    }
+    result(bool found, int number, int count) {
+        this->found = found;
+        this->number = number;
+        this->count = count;
+    }
+    bool found;
+    int number;
+    int count;
+};
+
+result f(int k, int l, int pprev, int sprev, int level, int aprev, int countprev, bool output) {
     level++;
-
-    //outlevel[level] << "Level: " << level << " start looping with " << aprev << endl;
-
-    int ret = pmax;
+    result ret(false, pmax, countprev);
 
     if (level == l) {
         if (pprev > 1) {
@@ -29,9 +40,11 @@ int f(int k, int l, int pprev, int sprev, int level, int aprev) {
                 int x = sprev / (pprev - 1);
                 if (x >= aprev) {
                     int p = pprev * x;
-                    cout << "Found a number:" << p << endl;
-                    //outlevel[level] << "Found a number:" << p << endl;
-                    ret = p;
+                    ret.found = true;
+                    ret.number = p;
+                    ret.count = countprev + 1;
+                    if (output)
+                        cout << "Found a number: " << p << " count: " << ret.count << endl;
                 }
             }
         }
@@ -39,101 +52,116 @@ int f(int k, int l, int pprev, int sprev, int level, int aprev) {
     }
 
     for (int ai = aprev; ai <= k; ai++) {
+        int count = ai > 1 ? countprev + 1 : countprev;
         int pact = pprev * ai;
         int sact = sprev + ai;
         int pfull_min = pact * int(pow(ai, l - level));
         int sfull_min = sact + ai * (l - level);
-        //outlevel[level] << "Level: " << level << " new element: " << ai << endl;
         if (pfull_min == sfull_min) {
-            return pfull_min;
+            count = l - level + 1;
+            if (output)
+                cout << "Found a number: " << pfull_min << " count: " << count << endl;
+            return result(true, pfull_min, count);
         }
         if (pfull_min > sfull_min) {
             return ret;
         }
-        //outf << "Not the last level: " << ai << endl;
-        int res = f(k, l, pact, sact, level, ai);
-        if (res < ret) {
+        result res = f(k, l, pact, sact, level, ai, count, output);
+        if (res.found && res.number < ret.number) {
             ret = res;
         }
     }
     return ret;
 }
 
-int solve_new(int k) {
+result solve_single(int k, bool output) {
     auto start = std::chrono::high_resolution_clock::now();
 
-    //outf.open("test.dat");
-    //outlevel[1].open("level1.dat");
-    //outlevel[2].open("level2.dat");
-    //outlevel[3].open("level3.dat");
-    //outlevel[4].open("level4.dat");
-    //outlevel[5].open("level5.dat");
-    //outlevel[6].open("level6.dat");
-    //outlevel[7].open("level7.dat");
-    //outlevel[8].open("level8.dat");
-    //outlevel[9].open("level9.dat");
-    //outlevel[10].open("level10.dat");
-
     if (k == 1) {
-        return 1;
+        return result(true, 1, 1);
     }
     else if (k == 2) {
-        return 4;
+        return result(true, 4, 2);
     }
     else if (k == 3) {
-        return 6;
+        return result(true, 6, 2);
     }
 
-    int l = int(log10(k) / log10(2)) + 1;
-    int ret = f(k, l, 1, k - l, 0, 1);
+    // replace 1-s with 2-s
+    int l = -1;
+    int p = 1;
+    int s = k;
+    while (p < s) {
+        l++;
+        p *= 2;
+        s += 1;
+    }
 
-    //outf.close();
-    //outlevel[1].close();
-    //outlevel[2].close();
-    //outlevel[3].close();
-    //outlevel[4].close();
-    //outlevel[5].close();
-    //outlevel[6].close();
-    //outlevel[7].close();
-    //outlevel[8].close();
-    //outlevel[9].close();
-    //outlevel[10].close();
-
-    //cout << "Ncalls = " << ncalls << endl;
+    result ret = f(k, l, 1, k - l, 0, 1, 0, output);
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     double t = duration.count() / 1E6;
 
-    cout << "Answer = " << ret << endl;
-    cout << "Overall execution time    = " << t << " s" << endl;
+    if (output) {
+        cout << "Minimal number        = " << ret.number << endl;
+        cout << "Count of elements > 1 = " << ret.count << endl;
+        cout << "Execution time        = " << t << " s" << endl;
+    }
     return ret;
+}
+
+void solve_multi(int k) {
+
+    outf.open("test_multi.dat");
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    int num_max = 0;
+    for (int ik = 2; ik <= k; ik++) {
+        result res = solve_single(ik, false); // solve_single(ik);
+        if (res.number > num_max) {
+            num_max = res.number;
+        }
+        if (ik % 511 == 0)
+            cout << ik << " : " << res.number << endl;
+        outf << ik << " " << res.number << " " << res.count << endl;
+    }
+
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    double t = duration.count() / 1E6;
+
+    cout << "Overall execution time    = " << t << " s" << endl;
+    outf << "Overall execution time    = " << t << " s" << endl;
+
+    outf.close();
 }
 
 int solve_sum(int k) {
 
-    outf.open("test.dat");
+    outf.open("test_sum.dat");
 
     auto start = std::chrono::high_resolution_clock::now();
 
     const int dim = 300000;
     int* mask = new int[dim];
-    int res_max = 0;
+    int num_max = 0;
     for (int ik = 2; ik <= k; ik++) {
-        int res = solve_new(ik); // solve_single(ik);
-        if (res > res_max) {
-            res_max = res;
+        result res = solve_single(ik, false); // solve_single(ik);
+        if (res.number > num_max) {
+            num_max = res.number;
         }
-        if (mask[res] == 0) {
-            mask[res] = ik;
+        if (mask[res.number] == 0) {
+            mask[res.number] = ik;
         }
         if (ik % 511 == 0)
-            cout << ik << " : " << res << endl;
-        outf << ik << " " << res << endl;
+            cout << ik << " : " << res.number << endl;
+        outf << ik << " " << res.number << endl;
     }
 
     int sum = 0;
-    for (int ik = 2; ik <= res_max; ik++) {
+    for (int ik = 2; ik <= num_max; ik++) {
         if (mask[ik] > 0 && mask[ik] <= k)
             sum += ik;
     }
@@ -156,7 +184,8 @@ int main() {
 
     int k = 200000;
     //int res = solve_sum(k);
-    int res = solve_new(k);
+    solve_multi(k);
+    //result res = solve_single(k, true);
 
     return 0;
 }
