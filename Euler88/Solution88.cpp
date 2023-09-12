@@ -10,23 +10,26 @@
 
 using namespace std;
 
+// PSN stands for product-sum number
+
 ofstream outf;
 ofstream outf1, outf2;
 
 const int pmax = numeric_limits<int>::max();
-const int dim_k = 210000;
-const int dim_div = 100;
+const int dim = 210000; // maximal dimension of the problem
+const int dim_div = 50; // maximal number of the factors
+
+bool isprime[dim] = {};
 
 //set<int> kset;
-int nmin[dim_k + 1] = {};
-bool nconsumed[dim_k + 1] = {};
-int ncalls[dim_div] = {};
-int ncallsall = 0;
+int nmin[dim] = {}; // nmin[k] is the minimal n for the given k; initially zeroes
+bool nconsumed[dim] = {}; // nconsumed[n] = true if n has already been used in the sum; initially false
 
-int kmin = 1000000;
-int kmax = 0;
+int ncalls[dim_div] = {}; // for debug: number of the funclion calls at the i-th depth
+int ncallsall = 0; // for debug: overall number of the funclion calls
 
-int finalsum = 0;
+int kfound = 0; // number of k-s for which the minimal PSN have been found; finally it should be equal to kmax - 1
+int finalsum = 0; // the final sum of PSN
 
 struct result
 {
@@ -69,6 +72,25 @@ void set_print(ostream& ostr, string s, const set<int>& v) {
         ostr << i << endl;
     }
     ostr << endl;
+}
+
+void getprimes() {
+    for (int i = 2; i < dim; i++) {
+        isprime[i] = true;
+    }
+    for (int i = 2; i < dim; i++) {
+        if (isprime[i]) {
+            int jst = i * i;
+            if (jst < dim) {
+                for (int j = jst; j < dim; j += i) {
+                    isprime[j] = false;
+                }
+            }
+            else {
+                break;
+            }
+        }
+    }
 }
 
 result f(int k, int l, int pprev, int sprev, int level, int aprev, int countprev, bool output) {
@@ -121,7 +143,7 @@ result f(int k, int l, int pprev, int sprev, int level, int aprev, int countprev
     return ret;
 }
 
-result solve_single(int k, bool output) {
+result solve_single_old(int k, bool output) {
 
     outf.open("test_single.dat");
     auto start = std::chrono::high_resolution_clock::now();
@@ -169,7 +191,7 @@ void solve_multi(int k) {
 
     int num_max = 0;
     for (int ik = 2; ik <= k; ik++) {
-        result res = solve_single(ik, false); // solve_single(ik);
+        result res = solve_single_old(ik, false); // solve_single(ik);
         if (res.number > num_max) {
             num_max = res.number;
         }
@@ -188,7 +210,7 @@ void solve_multi(int k) {
     outf.close();
 }
 
-int solve_sum(int k) {
+int solve_sum_old(int k) {
 
     outf.open("test_sum.dat");
 
@@ -198,7 +220,7 @@ int solve_sum(int k) {
     int* mask = new int[dim];
     int num_max = 0;
     for (int ik = 2; ik <= k; ik++) {
-        result res = solve_single(ik, false); // solve_single(ik);
+        result res = solve_single_old(ik, false); // solve_single(ik);
         if (res.number > num_max) {
             num_max = res.number;
         }
@@ -274,10 +296,10 @@ void fdiv_old(int n, int level, int p, int s, int dprev, int ndiv) {
     }
 }
 
-void fdiv1(int n, int p, int level, string spc, int sum, int dprev, int* factors) {
+void fdiv(int n, int kend, int p, int level, int sum, int dprev, int* factors) {
     level++;
-    spc.append(" ");
-    for (int d = dprev; d * d <= p; d++) {
+    int dend = int(sqrt(p));
+    for (int d = dprev; d <= dend; d++) {
         //ncallsall++;
         //ncalls[level]++;
         if (p % d == 0) {
@@ -285,25 +307,47 @@ void fdiv1(int n, int p, int level, string spc, int sum, int dprev, int* factors
             int s = sum + d;
             //factors[level - 1] = d;
             int k = n - (s + pp) + level + 1;
-            if (n < nmin[k] || nmin[k] == 0) {
-                nmin[k] = n;
-                if (k <= 16000 && !nconsumed[n]) {
-                    finalsum += n;
-                    nconsumed[n] = true;
+            if (k <= kend) {
+                if (nmin[k] == 0 || n < nmin[k]) {
+                    kfound++; // number of the k-s for which n is the minimal PSN
+                    nmin[k] = n;
+                    if (!nconsumed[n]) { // if the n hasn not been already counted, count it
+                        finalsum += n;
+                        nconsumed[n] = true;
+                    }
                 }
             }
-            if (k > kmax)
-                kmax = k;
-            if (k < kmin)
-                kmin = k;
             //kset.insert(k);
             //cout << spc << "Level " << level << ": divisor = " << d << " partial sum = " << s << " full sum = " << s + p / d << " k = " << k;
             //outf1 << spc << "Level " << level << ": divisor = " << d << " partial sum = " << s << " full sum = " << s + p / d << " k = " << k;
             //factors[level] = p / d;
             //array_nonzero_print(cout, " divisors: ", factors, level + 1);
             //factors[level] = 0;
-            fdiv1(n, p / d, level, spc, s, d, factors);
+            fdiv(n, kend, pp, level, s, d, factors);
             //factors[level - 1] = 0;
+        }
+    }
+}
+
+void fdiv_opt(int n, int kend, int p, int level, int sum, int dprev) {
+    level++;
+    int kconst = n - sum + level + 1;
+    int dend = int(sqrt(p));
+    for (int d = dprev; d <= dend; d++) {
+        if (p % d == 0) {
+            int pp = p / d;
+            int k = kconst - d - pp; // n - (s + pp) + level + 1;
+            if (k <= kend) {
+                if (nmin[k] == 0 || n < nmin[k]) {
+                    kfound++; // number of the k-s for which n is the minimal PSN
+                    nmin[k] = n;
+                    if (!nconsumed[n]) { // if the n hasn not been already counted, count it
+                        finalsum += n;
+                        nconsumed[n] = true;
+                    }
+                }
+            }
+            fdiv_opt(n, kend, pp, level, sum + d, d);
         }
     }
 }
@@ -322,27 +366,47 @@ void fdiv2(int n, int p, int level, string spc, int sum, int dprev, int* arr) {
     }
 }
 
-void solve_fdiv1() {
+void solve_single(int n) {
     outf1.open("test_nmin.dat");
     //outf2.open("test_kminmax.dat");
     auto start = std::chrono::high_resolution_clock::now();
 
-    //int n = 1206;
+    int kmax = 200000;
     int* factors = new int[dim_div];
-    //fdiv(n, 0, 1, 0, 1, 0);
-    //fdiv1(n, n, 0, "->", 0, 2, factors);
+    fdiv(n, kmax, n, 0, 0, 2, factors);
     //set_print(outf, "", kset);
 
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+    double t = duration.count() / 1E6;
+    cout << "Overall execution time    = " << t << " s" << endl;
+    //cout << "Ncalls = " << ncallsall;
+    //array_nonzero_print(cout, " : ", ncalls, dim_div);
+    array_nonzero_print2(outf1, "Nmin", nmin, dim);
+    outf1 << "Overall execution time    = " << t << " s" << endl;
+    outf1.close();
+    //outf2.close();
+}
+
+void solve_sum(int kmax) {
+    outf1.open("test_nmin.dat");
+    //outf2.open("test_kminmax.dat");
+    auto start = std::chrono::high_resolution_clock::now();
+
+    getprimes();
+
+    int* factors = new int[dim_div];
     int n = 4;
     while (true) {
-        fdiv1(n, n, 0, "->", 0, 2, factors);
+        if (!isprime[n]) {
+            //fdiv(n, kmax, n, 0, 0, 2, factors);
+            fdiv_opt(n, kmax, n, 0, 0, 2);
+        }
         //outf2 << n << " " << kmin << " " << kmax << endl;
-        if (kmin < 1000000 && kmin >= 16000)
+        if (kfound == kmax - 1) {
             break;
+        }
 
-        // next n
-        kmin = 1000000;
-        kmax = 0;
         n++;
     }
 
@@ -351,58 +415,43 @@ void solve_fdiv1() {
     double t = duration.count() / 1E6;
     cout << "Overall execution time    = " << t << " s" << endl;
     cout << "Final sum = " << finalsum << endl;
-    //cout << "Ncalls = " << ncallsall;
-    //array_nonzero_print(cout, " : ", ncalls, dim_div);
-    array_nonzero_print2(outf1, "Nmin", nmin, dim_k);
+    cout << "Ncalls = " << ncallsall;
+    array_nonzero_print(cout, " : ", ncalls, dim_div);
+    array_nonzero_print2(outf1, "Nmin", nmin, dim);
     outf1 << "Overall execution time    = " << t << " s" << endl;
     outf1.close();
     //outf2.close();
 }
 
-void solve_fdiv2() {
-    outf.open("test_fdiv2.dat");
-    //outf1.open("test_nmin.dat");
-    //outf2.open("test_kminmax.dat");
+void solve_opt(int kmax) {
     auto start = std::chrono::high_resolution_clock::now();
 
-    int n = 120;
-    int* arr = new int[dim_div];
-    fdiv2(n, n, 0, "->", n, 2, arr);
-    //set_print(outf, "", kset);
+    getprimes();
 
-    //n = 4;
-    //while (true) {
-    //    fdiv1(n, n, 0, "->", 0, 2, arr);
-    //    outf2 << n << " " << kmin << " " << kmax << endl;
-    //    if (kmin < 1000000 && kmin >= 12000)
-    //        break;
+    int n = 4;
+    while (true) {
+        if (!isprime[n]) {
+            fdiv_opt(n, kmax, n, 0, 0, 2);
+        }
+        if (kfound == kmax - 1) {
+            break;
+        }
 
-    //    // next n
-    //    kmin = 1000000;
-    //    kmax = 0;
-    //    n++;
-    //}
+        n++;
+    }
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     double t = duration.count() / 1E6;
     cout << "Overall execution time    = " << t << " s" << endl;
-    cout << "Ncalls = " << ncallsall;
-    array_nonzero_print(cout, " : ", ncalls, dim_div);
-    array_nonzero_print2(outf1, "Nmin", nmin, dim_k);
-    outf1 << "Overall execution time    = " << t << " s" << endl;
-    //outf1.close();
-    //outf2.close();
-    outf.close();
+    cout << "Final sum = " << finalsum << endl;
 }
 
 int main() {
 
-    //int k = 12;
-    //int res = solve_sum(k);
-    //solve_multi(k);
-    //result res = solve_single(k, true);
-    solve_fdiv1();
+    //solve_single(200000);
+    //solve_sum(200000);
+    solve_opt(12);
 
     return 0;
 }
