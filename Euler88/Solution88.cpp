@@ -17,13 +17,16 @@ const int pmax = numeric_limits<int>::max();
 const int dim_k = 210000;
 const int dim_div = 100;
 
-set<int> kset;
+//set<int> kset;
 int nmin[dim_k + 1] = {};
+bool nconsumed[dim_k + 1] = {};
 int ncalls[dim_div] = {};
 int ncallsall = 0;
 
 int kmin = 1000000;
 int kmax = 0;
+
+int finalsum = 0;
 
 struct result
 {
@@ -271,31 +274,36 @@ void fdiv_old(int n, int level, int p, int s, int dprev, int ndiv) {
     }
 }
 
-void fdiv1(int n, int p, int level, string spc, int sum, int dprev, int* arr) {
+void fdiv1(int n, int p, int level, string spc, int sum, int dprev, int* factors) {
     level++;
     spc.append(" ");
     for (int d = dprev; d * d <= p; d++) {
-        ncallsall++;
-        ncalls[level]++;
+        //ncallsall++;
+        //ncalls[level]++;
         if (p % d == 0) {
             int pp = p / d;
             int s = sum + d;
-            arr[level - 1] = d;
+            //factors[level - 1] = d;
             int k = n - (s + pp) + level + 1;
-            if (n < nmin[k] || nmin[k] == 0)
+            if (n < nmin[k] || nmin[k] == 0) {
                 nmin[k] = n;
+                if (k <= 16000 && !nconsumed[n]) {
+                    finalsum += n;
+                    nconsumed[n] = true;
+                }
+            }
             if (k > kmax)
                 kmax = k;
             if (k < kmin)
                 kmin = k;
             //kset.insert(k);
-            //cout << spc << "Level " << level << ": divisor = " << d << " partial sum = " << s << " full sum = " << s + p / d << " k = " << k << endl;
-            //outf << spc << "Level " << level << ": divisor = " << d << " partial sum = " << s << " full sum = " << s + p / d << " k = " << k;
-            arr[level] = p / d;
-            //array_nonzero_print(outf, " divisors: ", arr, level + 1);
-            arr[level] = 0;
-            fdiv1(n, p / d, level, spc, s, d, arr);
-            arr[level - 1] = 0;
+            //cout << spc << "Level " << level << ": divisor = " << d << " partial sum = " << s << " full sum = " << s + p / d << " k = " << k;
+            //outf1 << spc << "Level " << level << ": divisor = " << d << " partial sum = " << s << " full sum = " << s + p / d << " k = " << k;
+            //factors[level] = p / d;
+            //array_nonzero_print(cout, " divisors: ", factors, level + 1);
+            //factors[level] = 0;
+            fdiv1(n, p / d, level, spc, s, d, factors);
+            //factors[level - 1] = 0;
         }
     }
 }
@@ -316,38 +324,39 @@ void fdiv2(int n, int p, int level, string spc, int sum, int dprev, int* arr) {
 
 void solve_fdiv1() {
     outf1.open("test_nmin.dat");
-    outf2.open("test_kminmax.dat");
+    //outf2.open("test_kminmax.dat");
     auto start = std::chrono::high_resolution_clock::now();
 
-    int n = 120;
-    int* arr = new int[dim_div];
+    //int n = 1206;
+    int* factors = new int[dim_div];
     //fdiv(n, 0, 1, 0, 1, 0);
-    fdiv1(n, n, 0, "->", 0, 2, arr);
+    //fdiv1(n, n, 0, "->", 0, 2, factors);
     //set_print(outf, "", kset);
 
-    //n = 4;
-    //while (true) {
-    //    fdiv1(n, n, 0, "->", 0, 2, arr);
-    //    outf2 << n << " " << kmin << " " << kmax << endl;
-    //    if (kmin < 1000000 && kmin >= 12000)
-    //        break;
+    int n = 4;
+    while (true) {
+        fdiv1(n, n, 0, "->", 0, 2, factors);
+        //outf2 << n << " " << kmin << " " << kmax << endl;
+        if (kmin < 1000000 && kmin >= 16000)
+            break;
 
-    //    // next n
-    //    kmin = 1000000;
-    //    kmax = 0;
-    //    n++;
-    //}
+        // next n
+        kmin = 1000000;
+        kmax = 0;
+        n++;
+    }
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     double t = duration.count() / 1E6;
     cout << "Overall execution time    = " << t << " s" << endl;
-    cout << "Ncalls = " << ncallsall;
-    array_nonzero_print(cout, " : ", ncalls, dim_div);
+    cout << "Final sum = " << finalsum << endl;
+    //cout << "Ncalls = " << ncallsall;
+    //array_nonzero_print(cout, " : ", ncalls, dim_div);
     array_nonzero_print2(outf1, "Nmin", nmin, dim_k);
     outf1 << "Overall execution time    = " << t << " s" << endl;
     outf1.close();
-    outf2.close();
+    //outf2.close();
 }
 
 void solve_fdiv2() {
@@ -393,7 +402,7 @@ int main() {
     //int res = solve_sum(k);
     //solve_multi(k);
     //result res = solve_single(k, true);
-    solve_fdiv2();
+    solve_fdiv1();
 
     return 0;
 }
