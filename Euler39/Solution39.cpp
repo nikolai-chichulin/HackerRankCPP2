@@ -13,24 +13,10 @@ typedef long long li; // long integer
 
 ofstream outf;
 
-const int dim = 2000001;
-bool isprime[dim];
+const li dim = 5000001;
 
-li ntriples[5000001] = {};
-
-void getprimes() {
-    for (li i = 2; i < dim; i++) {
-        isprime[i] = true;
-    }
-    for (li i = 2; i < dim; i++) {
-        if (isprime[i]) {
-            li jst = i * i;
-            for (li j = jst; j < dim; j += i) {
-                isprime[j] = false;
-            }
-        }
-    }
-}
+li ntriples[dim] = {}; // ntriples[p] = number of triples for the given perimeter p
+li maxtriples_perimeter[dim] = {}; // maxtriples_perimeter[p] = perimeter with maximum triples less or equal than the given p
 
 void print_array(ostream& ostr, const int* v, int k) {
     for (int i = 0; i < k; i++) {
@@ -39,51 +25,13 @@ void print_array(ostream& ostr, const int* v, int k) {
     ostr << endl;
 }
 
-li isqrt(li i) {
-    li ret = -1;
-    li tmp = li(sqrt(i));
-    li tmp_2 = tmp * tmp;
-    if (tmp_2 == i) {
-        ret = tmp;
-    }
-    return ret;
-}
-
-void solve_bf(li pmax) {
+/// <summary>
+/// Constructs the ntriples array.
+/// </summary>
+/// <param name="pmax">The maximal acceptable perimeter.</param>
+void solve_ab(li pmax) {
     int n = 0;
-    int nb = 0;
-    for (li a = 2; a < pmax / 2; a++) {
-        li a_2 = a * a;
-        //if (n % 10 == 0)
-        //    cout << a << endl;
-        for (li b = a; b < (pmax - a); b++) {
-            if (!isprime[a])
-                continue;
-            li b_2 = b * b;
-            li c_2 = a_2 + b_2;
-            li maybe_c = isqrt(c_2);
-            li p = a + b + maybe_c;
-            if (maybe_c != -1 && p <= pmax) {
-                n++;
-                bool tmp1 = a % 3 == 0 && b % 4 == 0 && maybe_c % 5 == 0;
-                bool tmp2 = a / 3 == b / 4;
-                if (tmp1 && tmp2) {
-                    nb++;
-                    outf << n << ": " << a << " " << b << " " << maybe_c << " : P = " << p << " basic!" << endl;
-                }
-                else {
-                    outf << n << ": " << a << " " << b << " " << maybe_c << " : P = " << p << endl;
-                    cout << n << ": " << a << " " << b << " " << maybe_c << " : P = " << p << endl;
-                }
-            }
-        }
-    }
-    outf << "nb=" << nb << endl;
-}
-
-li solve_ab(li pmax) {
-    int n = 0;
-    li amax = li(sqrt(pmax)) + 1;
+    li amax = 2500; // li(sqrt(pmax)) + 1;
     for (li a = 3; a < amax; a += 2) {
         li a_2 = a * a;
         for (li b = 1; b < a; b += 2) {
@@ -103,24 +51,32 @@ li solve_ab(li pmax) {
             }
         }
     }
+}
 
-    li ipmax = 0;
+/// <summary>
+/// Constructs the maxtriples_perimeter array.
+/// </summary>
+/// <param name="pmax">The maximal acceptable perimeter.</param>
+void finalize(li pmax) {
+    li p_with_max_triples = 0;
     li ntriples_max = 0;
-    for (li ip = 0; ip <= pmax; ip++) {
-        if (ntriples[ip] > ntriples_max) {
-            ntriples_max = ntriples[ip];
-            ipmax = ip;
+    for (li p = 0; p <= pmax; p++) {
+        if (ntriples[p] > ntriples_max) {
+            ntriples_max = ntriples[p];
+            p_with_max_triples = p;
         }
+        maxtriples_perimeter[p] = p_with_max_triples;
+        //outf << p << " " << ntriples[p] << " " << maxtriples_perimeter[p] << " " << ntriples_max << endl;
     }
-    return ipmax;
 }
 
 void solve() {
     outf.open("euler39.out");
     auto start = std::chrono::high_resolution_clock::now();
 
-    //getprimes();
-    cout << solve_ab(5000000) << endl;
+    solve_ab(dim - 1);
+    finalize(dim - 1);
+    cout << maxtriples_perimeter[5000000] << endl;
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
