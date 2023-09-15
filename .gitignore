@@ -370,3 +370,4 @@ FodyWeavers.xsd
 *.dat
 *.dat_
 *.res
+*.out
