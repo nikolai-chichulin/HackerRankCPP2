@@ -47,8 +47,9 @@ int main() {
 
     makesk();
 
-    li i = 1234567l;
+    li i = 1l;
     li k = getk(i);
+    cout << "i = " << i << " k = " << k << endl;
 
     return 0;
 }
