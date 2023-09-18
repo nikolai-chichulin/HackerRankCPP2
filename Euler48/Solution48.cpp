@@ -20,8 +20,9 @@ ul s[dim]; // the terms: S = s1 + s2 + s3 + ... + sN, where s2 = 2^2, s30 = 30^3
 ul primes[dim_primes]; // primes <= 2 000 000
 bool isprime[dim];
 
-const ul edge = 4000000000l;
-ul memo[200000000] = {};
+const ul edge = 4200000000l;
+const ul edge_2 = 2 * edge;
+const ul edge_05 = edge / 2;;
 
 void getprimes() {
     for (ul i = 2; i < dim; i++) {
@@ -43,30 +44,39 @@ bool is_small(ul n) {
     return n <= edge;
 }
 
-bool is_small(ul n1, ul n2) {
-    return (n1 / 10 + 1) * (n2 / 10 + 1) < LLONG_MAX / 100;
+bool product_is_small(ul n1, ul n2) {
+    if (n1 < edge && n2 < edge) {
+        return true;
+    }
+    else if (n1 < edge_2 && n2 < edge_05) {
+        return true;
+    }
+    else if (n1 < edge_05 && n2 < edge_2) {
+        return true;
+    }
+    return false;
 }
 
 ul safe_mod_multiplication(ul a, ul b, ul m) {
     ul ret = 0;
-    if (is_small(a, b)) {
+    if (product_is_small(a, b)) {
         ret = (a * b) % m;
+        //outf << "Debug safe_mod_multiplication small: a = " << a << " b = " << b << " ret = " << ret << endl;
     }
     else {
         ul mx = a > b ? a : b; // maximum
         ul mn = mx == a ? b : a; // minimum
         if (mx % 2l == 0) {
             ul mx_2 = mx / 2l;
-            ret = safe_mod_multiplication(safe_mod_multiplication(mx_2, mn, m), 2l, m);
+            ret = (2 * safe_mod_multiplication(mx_2, mn, m)) % m;
         }
         else {
             ul mx_2 = (mx - 1l) / 2l;
-            ret = safe_mod_multiplication(safe_mod_multiplication(mx_2, mn, m), 2l, m);
+            ret = (2 * safe_mod_multiplication(mx_2, mn, m)) % m;
             ret = (ret + mn) % m;
         }
+        //outf << "Debug safe_mod_multiplication big: a = " << a << " b = " << b << " ret = " << ret << endl;
     }
-    //if (a == b)
-    //    outf << "Debug: a = " << a << " b = " << b << " ret = " << ret << endl;
     return ret;
 }
 
@@ -215,7 +225,7 @@ ul mod_binpow(ul a, ul b, ul m) {
 }
 
 void test() {
-    ul N = 200000l;
+    ul N = 2000000l;
     ul s1 = 0;
     ul s2 = 0;
     for (ul a = 1l; a <= N; a++) {
