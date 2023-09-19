@@ -22,7 +22,10 @@ bool isprime[dim];
 
 const ul edge = 4200000000l;
 const ul edge_2 = 2 * edge;
-const ul edge_05 = edge / 2;;
+const ul edge_05 = edge / 2;
+
+ul memo[dim] = {};
+bool marked[dim] = {};
 
 void getprimes() {
     for (ul i = 2; i < dim; i++) {
@@ -46,12 +49,6 @@ bool is_small(ul n) {
 
 bool product_is_small(ul n1, ul n2) {
     if (n1 < edge && n2 < edge) {
-        return true;
-    }
-    else if (n1 < edge_2 && n2 < edge_05) {
-        return true;
-    }
-    else if (n1 < edge_05 && n2 < edge_2) {
         return true;
     }
     return false;
@@ -224,29 +221,18 @@ ul mod_binpow(ul a, ul b, ul m) {
     return ret;
 }
 
-void test() {
-    ul N = 2000000l;
-    ul s1 = 0;
-    ul s2 = 0;
+void test(ul N) {
+    ul s = 0;
     for (ul a = 1l; a <= N; a++) {
-        //ul c1 = mod_power(a, a, tol);
-        ul c2 = mod_binpow(a, a, tol);
-        //if (c1 != c2) {
-        //    cout << " Failed for a = " << a << "!!!" << endl;
-        //}
-        //s1 += c1;
-        //s1 %= tol;
-        s2 = (s2 + c2) % tol;
-
-        //if (a % 100000 == 0)
-        //    cout << a << " done" << endl;
+        ul c = mod_binpow(a, a, tol);
+        s = (s + c) % tol;
     }
-    cout << "Sum1 = " << s1 << " Sum2 = " << s2 << endl;
+    cout << "Sum = " << s << endl;
 }
 
 void test_one() {
-    ul a = 1999999l;
-    ul b = 1999999l;
+    ul a = 1999993l;
+    ul b = 1999993l;
     ul c1 = mod_power(a, b, tol);
     cout << "c1 = " << c1 << endl;
     ul c2 = mod_binpow(a, b, tol);
@@ -260,6 +246,35 @@ void test_one() {
     }
 }
 
+ul partsum(ul t, ul n, ul m) {
+
+    // x(t) = t^t; q(t) = 2^t;
+    // x(2t) = (2t)^2t = q(2t)*x(t)^2; q(2t) = q(t)^2; etc.
+
+    ul sum = 0;
+
+    ul i = t; // indexes = t,2t,4t,...
+    ul q = mod_binpow(2l, t, m); // q(t) = 2^t
+    ul xt = mod_binpow(t, t, m); // x(t) = t^t
+    memo[i] = xt; // memoize
+    marked[i] = true;
+    sum = (sum + xt) % m;
+
+    while (true) {
+        i *= 2l;
+        if (i > n) {
+            break;
+        }
+        q = safe_mod_multiplication(q, q, m); // q(2t) = q(t)^2
+        xt = safe_mod_multiplication(xt, xt, m); // tmp = x(t)^2
+        xt = safe_mod_multiplication(q, xt, m); // x(2t) = q(2t)*tmp
+        memo[i] = xt;
+        marked[i] = true;
+        sum = (sum + xt) % m;
+    }
+    return sum;
+}
+
 int main() {
 
     outf.open("Euler48.out");
@@ -267,16 +282,27 @@ int main() {
     /* Enter your code here. Read input from STDIN. Print output to STDOUT */
     auto start = std::chrono::high_resolution_clock::now();
 
+    //getprimes();
+
+    ul n = 2000000;
     //solveBF(10000);
-    test();
+    //test(n);
     //test_one();
     //safe_mod_multiplication_test();
 
+    // all primes 1,2,3,5,...
+    ul sum = 0;
+    for (ul t = 1; t <= n; t++) {
+        if (!marked[t]) {
+            sum = (sum + partsum(t, n, tol)) % tol;
+        }
+    }
+    cout << "Sum = " << sum << endl;
     outf.close();
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
-    double t = duration.count() / 1E6;
-    cout << "Execution time    = " << t << " s" << endl;
+    double time = duration.count() / 1E6;
+    cout << "Execution time    = " << time << " s" << endl;
     return 0;
 }
