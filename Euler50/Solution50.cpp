@@ -14,24 +14,55 @@ typedef long long int li;
 typedef unsigned long long int lu;
 typedef size_t sz;
 
-const lu primelim = 10000000;
+const lu dim = 1000000000000UL;
+const lu primelim = 10000000UL;
 bool isprime[primelim + 1];
 sz primes[primelim + 1];
 sz nprimes;
 lu s[primelim + 1];
 
-struct four {
-    int i1;
-    int i2;
-    int i3;
-    lu i4;
-    four(int i1, int i2, int i3, lu i4) {
-        this->i1 = i1;
-        this->i2 = i2;
-        this->i3 = i3;
-        this->i4 = i4;
+/// <summary>
+/// Returns i: a[i]<=target<=arr[i+1] given that the array is ascending order.
+/// </summary>
+/// <param name="data">The array.</param>
+/// <param name="start">Start index (inclusive).</param>
+/// <param name="end">End index (exclusive).</param>
+/// <param name="target">A number to search for.</param>
+/// <param name="is">Optional: starting index.</param>
+/// <param name="addition">Optional: a term to add to each element.</param>
+/// <returns></returns>
+int binary_search(const lu* data, int start, int end, lu target, int is = 0, lu addition = 0) {
+
+    if (target >= (data[end - 1] - addition)) {
+        return end - 1;
     }
-};
+    if (target < (data[start] - addition)) {
+        return -1;
+    }
+    if (target == (data[start] - addition)) {
+        return start;
+    }
+    if ((data[is] - addition) <= target && target <= (data[is + 1] - addition)) {
+        return is;
+    }
+
+    int il = start;
+    int ir = end - 1;
+    is = (il + ir) / 2;
+    while (true) {
+        if ((data[is] - addition) <= target && target <= (data[is + 1] - addition)) {
+            return int(is);
+        }
+        if (target > (data[is] - addition)) {
+            il = is;
+        }
+        else {
+            ir = is;
+        }
+        is = (il + ir) / 2;
+    }
+    return -1;
+}
 
 bool isaprime(lu n) {
 
@@ -40,8 +71,6 @@ bool isaprime(lu n) {
     {
         return isprime[n];
     }
-
-    //cout << "Passed to bigger values" << endl;
 
     // Re-calculate
     if (n == 2 || n == 3) {
@@ -83,119 +112,136 @@ void getprimes() {
     nprimes = ipr;
 }
 
-four getinitialsum(int ind, lu n) {
+int getsums() {
     int length = 0;
     lu stmp = 0;
-    lu sres = 0;
-    int i = ind;
-    for (; i < nprimes; i++) {
-        stmp += primes[i];
-        if (stmp <= n) {
-            s[i] = stmp;
+    int last_prime = 0;
+    for (int i = 1; i <= nprimes; i++) {
+        stmp += primes[i - 1];
+        if (stmp <= dim) {
             length++;
+            s[i] = stmp;
+            last_prime = i - 1;
         }
         else {
-            i--;
-            //cout << "Last prime: P(" << i << ") = " << primes[i] << endl;
             break;
         }
     }
-    int j = i;
-    for (; j >= 0; j--) {
-        if (isaprime(s[j])) {
-            //cout << "S[" << j << "] = " << s[j] << endl;
-            sres = s[j];
-            break;
-        }
-        length--;
-    }
-    return four(ind, j, length, sres);
+    //cout << "Getsums: length           = " << length << endl;
+    //cout << "Getsums: the last prime   = " << primes[last_prime] << endl;
+    //cout << "Getsums: the last sum     = " << s[length] << endl;
+    //cout << "Getsums: the gap to 10^12 = " << dim - s[length] << endl;
+    //cout << "Getsums: the next prime   = " << primes[last_prime + 1] << " makes the sums > N" << endl;
+    return length;
 }
 
-four trytoinsreasesum(int ilastini, int lengthini, lu n) {
-    int is = ilastini;
-    int lengthmax = lengthini;
-    int indmax = 0;
-    int imax = 0;
-    lu smax = 0L;
-    for (int ind = 1; ind < 100; ind++) {
+void solve(int length, lu n, lu prime_exp, int length_exp) {
 
-        int i = is; // current start point is
+    // Get index of the rightmost sum <= n
+    int pos_right = binary_search(s, 1, length + 1, n);
 
-        // minus the starting prime
-        s[i] -= primes[ind - 1];
+    // Given the index of the first prime to sum is pos_left,
+    // calculate the first prime of the sums starting from the pos_right
+    int max_length = 0;
+    lu res_prime = 0;
+    int res_pos_left = 0;
+    for (int pos_left = 0; pos_left < 20; pos_left++) {
+        int length_tmp = 0;
+        lu prime_tmp = 0;
 
-        // add the next primes
-        lu stmp = s[i++];
-        for (; i < nprimes; i++) {
-            stmp += primes[i];
-            if (stmp <= n) {
-                s[i] = stmp;
-            }
-            else {
-                i--;
+        // correct pos_right if needed, because the sums are getting smaller
+        if (pos_left > 0)
+            pos_right = binary_search(s, pos_left + 1, length + 1, n, pos_right, s[pos_left]);
+
+        // scan the array to search for the first prime
+        for (int i = pos_right; i > pos_left; i--) {
+            lu sum_reduced = s[i] - s[pos_left];
+            if (isaprime(sum_reduced)) {
+                //cout << "i = " << i << endl;
+                length_tmp = i - pos_left;
+                prime_tmp = sum_reduced;
+                if (length_tmp > max_length) {
+                    max_length = length_tmp;
+                    res_prime = sum_reduced;
+                    res_pos_left = pos_left;
+                }
                 break;
             }
         }
-
-        // now go back to find furthest prime
-        // it makes no sense to go beyond the start index is
-        // as we don't subtract the first primes 
-        // from the sums with indexes less than the is
-        bool found = false;
-        for (; i > is; i--) {
-            if (isaprime(s[i])) {
-                found = true; // new prime sequential sum is found!
-                is = i; // this will be the next start point
-                break;
-            }
-        }
-        if (found) {
-            int length = i - ind + 1;
-            if (length > lengthmax) {
-                cout <<
-                    " --> optimization: ind = " << ind <<
-                    " i = " << i <<
-                    " P(i) = " << primes[i] <<
-                    " S[i] = " << s[i] <<
-                    " length = " << length << endl;
-                lengthmax = length;
-                imax = i;
-                indmax = ind;
-                smax = s[i];
-            }
-            else if (lengthmax - length > 1000) {
-                break;
-            }
-        }
+        //cout << "N = " << n << " Prime " << prime_tmp << " is a sum of " << length_tmp << " primes starting from " << primes[pos_left] << endl;
     }
-    return four(indmax, imax, lengthmax, smax);
+    //cout << "Final result for N = " << n << ": prime " << res_prime << " is a sum of " << max_length << " primes starting from " << primes[res_pos_left] << endl;
+    if (res_prime == prime_exp && max_length == length_exp) {
+        cout << "N = " << n << " passed!" << endl;
+    }
+    else {
+        cout << "N = " << n << " failed!" << endl;
+        cout << "prime act  = " << res_prime << " prime exp = " << prime_exp << endl;
+        cout << "length act = " << max_length << " length exp = " << length_exp << endl;
+    }
 }
 
-void solve(lu n) {
-
+void solve_debug() {
     // Get primes
     getprimes();
 
-    // Get the sequential sums
-    int ind = 3;
-    four res = getinitialsum(ind, n);
+    // Get the sequential sums and their length
+    int length = getsums();
 
-    // Output
-    cout << "Initial length: ind = " << ind << " imax = " << res.i2 << " length = " << res.i3 << " sum = " << res.i4 << endl;
-    four resnew = trytoinsreasesum(res.i1, res.i2, n);
-    if (resnew.i1 > ind) {
-        cout << "Maximum length: ind = " << resnew.i1 << " imax = " << resnew.i2 << " length = " << resnew.i3 << " sum = " << resnew.i4 << endl;
-    }
+    lu n = 2UL;
+    solve(length, n, 2UL, 1);
+}
+
+void solve() {
+    // Get primes
+    getprimes();
+
+    // Get the sequential sums and their length
+    int length = getsums();
+
+    lu n = 2UL;
+    solve(length, n, 2UL, 1);
+    n = 3UL;
+    solve(length, n, 2UL, 1);
+    n = 100UL;
+    solve(length, n, 41UL, 6);
+    n = 1000UL;
+    solve(length, n, 953UL, 21);
+    n = 2000000UL;
+    solve(length, n, 1999219UL, 749);
+    n = 1783562573UL;
+    solve(length, n, 1782822889UL, 18345);
+    n = 2000000001UL;
+    solve(length, n, 1999021753UL, 19371);
+    n = 4000000001UL;
+    solve(length, n, 3999458657UL, 26939);
+    n = 5000000001UL;
+    solve(length, n, 4999713847UL, 29961);
+    n = 6000000001UL;
+    solve(length, n, 5999600857UL, 32687);
+    n = 7000000001UL;
+    solve(length, n, 6998090059UL, 35177);
+    n = 20000000001UL;
+    solve(length, n, 19999691651UL, 58073);
+    n = 84754975923UL;
+    solve(length, n, 84752639107UL, 115926);
+    n = 984754975923UL;
+    solve(length, n, 984747421873UL, 376525);
+    n = 500000000000UL;
+    solve(length, n, 499964183321UL, 271764);
+    n = 978787887777UL;
+    solve(length, n, 978785118401UL, 375423);
+    n = 999999999999UL;
+    solve(length, n, 999973156643UL, 379317);
+    n = 1000000000000UL;
+    solve(length, n, 999973156643UL, 379317);
 }
 
 int main() {
 
-    const lu n = 1000000000000L;
-
     auto start = std::chrono::high_resolution_clock::now();
     //
-    solve(n);
+    solve();
     //
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
