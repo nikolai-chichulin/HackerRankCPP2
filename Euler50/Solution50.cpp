@@ -8,6 +8,8 @@
 #include <set>
 #include <string>
 
+#include "50.h"
+
 using namespace std;
 
 typedef long long int li;
@@ -42,7 +44,7 @@ int binary_search(const lu* data, int start, int end, lu target, int is = 0, lu 
     if (target == (data[start] - addition)) {
         return start;
     }
-    if ((data[is] - addition) <= target && target <= (data[is + 1] - addition)) {
+    if ((data[is] - addition) <= target && target < (data[is + 1] - addition)) {
         return is;
     }
 
@@ -50,7 +52,7 @@ int binary_search(const lu* data, int start, int end, lu target, int is = 0, lu 
     int ir = end - 1;
     is = (il + ir) / 2;
     while (true) {
-        if ((data[is] - addition) <= target && target <= (data[is + 1] - addition)) {
+        if ((data[is] - addition) <= target && target < (data[is + 1] - addition)) {
             return int(is);
         }
         if (target > (data[is] - addition)) {
@@ -135,7 +137,7 @@ int getsums() {
     return length;
 }
 
-void solve(int length, lu n, lu prime_exp, int length_exp) {
+pair<lu, int> solve(int length, lu n, lu prime_exp = 0, int length_exp = 0) {
 
     // Get index of the rightmost sum <= n
     int pos_right = binary_search(s, 1, length + 1, n);
@@ -171,14 +173,18 @@ void solve(int length, lu n, lu prime_exp, int length_exp) {
         //cout << "N = " << n << " Prime " << prime_tmp << " is a sum of " << length_tmp << " primes starting from " << primes[pos_left] << endl;
     }
     //cout << "Final result for N = " << n << ": prime " << res_prime << " is a sum of " << max_length << " primes starting from " << primes[res_pos_left] << endl;
-    if (res_prime == prime_exp && max_length == length_exp) {
-        cout << "N = " << n << " passed!" << endl;
+    //cout << res_prime << " " << max_length << endl;
+    if (prime_exp * max_length > 0) {
+        if (res_prime == prime_exp && max_length == length_exp) {
+            cout << "N = " << n << " passed!" << endl;
+        }
+        else {
+            cout << "N = " << n << " failed!" << endl;
+            cout << "prime act  = " << res_prime << " prime exp = " << prime_exp << endl;
+            cout << "length act = " << max_length << " length exp = " << length_exp << endl;
+        }
     }
-    else {
-        cout << "N = " << n << " failed!" << endl;
-        cout << "prime act  = " << res_prime << " prime exp = " << prime_exp << endl;
-        cout << "length act = " << max_length << " length exp = " << length_exp << endl;
-    }
+    return pair<lu, int>(res_prime, max_length);
 }
 
 void solve_debug() {
@@ -192,7 +198,7 @@ void solve_debug() {
     solve(length, n, 2UL, 1);
 }
 
-void solve() {
+void solve_test() {
     // Get primes
     getprimes();
 
@@ -237,12 +243,42 @@ void solve() {
     solve(length, n, 999973156643UL, 379317);
 }
 
+void compare() {
+
+    // Get primes
+    getprimes();
+
+    // Get the sequential sums and their length
+    int length = getsums();
+
+    //
+    lu n = 2UL;
+    while (true) {
+        pair<lu, int> res1 = solve(length, n);
+        pair<lu, unsigned int> res2 = get_solution_brumme(n);
+        if (res1.first != res2.first || res1.second != res2.second) {
+            cout << "n = " << n << " failed! ----->>>>>" << endl;
+        }
+        else {
+            //cout << "n = " << n << " passed." << endl;
+        }
+        //cout << "----------" << endl;
+        n++;
+        if (n > 100000)
+            break;
+    }
+
+}
+
 int main() {
 
     auto start = std::chrono::high_resolution_clock::now();
+
     //
-    solve();
+    //solve_test();
+    compare();
     //
+
     auto stop = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
     double t = duration.count() / 1E6;

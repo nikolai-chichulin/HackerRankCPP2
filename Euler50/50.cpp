@@ -257,7 +257,7 @@ void morePrimes(unsigned int num)
     primeSum.push_back(primeSum.back() + primes[i]);
 }
 
-int main()
+int mainBrumme()
 {
   // generate some primes
   const unsigned int PrimesPerBatch = 10000;
